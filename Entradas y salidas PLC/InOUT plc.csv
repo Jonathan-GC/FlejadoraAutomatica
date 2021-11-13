@@ -1,0 +1,79 @@
+Connector,name
+I1,START
+I2,STOP
+I3,Boton CIZALLA
+I4,SALIDA CARRO
+I5,Sensor de Angulo
+I6,PIN13 arduino
+I7,PIN12 arduino 45°
+I8,PIN 11 arduino 90°
+I9,Pedal
+I10,Home
+I11,
+I12,
+I13,
+I14,
+I15,
+I16,
+I17,
+I18,
+I19,
+I20,
+I21,
+I22,
+I23,
+I24,
+C1,
+C2,
+C3,
+C4,
+S1.1,
+S1.2,
+S1.3,
+S1.4,
+S1.5,
+S1.6,
+S1.7,
+S1.8,
+AI1,
+AI2,
+AI3,
+AI4,
+AI5,
+AI6,
+AI7,
+AI8,
+Q1,Doblador Horario
+Q2,Doblador AntiHorario
+Q3,Alimentador antiHorario
+Q4,Alimentador Horario
+Q5,Senial to ArduinoStart
+Q6,Indicador LED
+Q7,Salida Cabezal
+Q8,Corte Cizalla
+Q9,
+Q10,
+Q11,
+Q12,
+Q13,
+Q14,
+Q15,
+Q16,
+AQ1,
+AQ2,
+X1,
+X2,
+X3,
+X4,
+X5,
+X6,
+X7,
+X8,
+X9,
+X10,
+X11,
+X12,
+X13,
+X14,
+X15,
+X16,
