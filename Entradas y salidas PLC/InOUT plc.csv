@@ -4,12 +4,12 @@ I2,STOP
 I3,Boton CIZALLA
 I4,SALIDA CARRO
 I5,Sensor de Angulo
-I6,PIN13 arduino
-I7,PIN12 arduino 45°
+I6,PIN A2 arduino Alimentar
+I7,PIN A3  arduino 45°
 I8,PIN 11 arduino 90°
 I9,Pedal
 I10,Home
-I11,
+I11,PIN 12 Arduino Retraer varilla
 I12,
 I13,
 I14,
