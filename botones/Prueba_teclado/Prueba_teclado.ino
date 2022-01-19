@@ -15,6 +15,11 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 #define pinTeclado A0
 
+/**
+    MACROS, CONSTANTES, ENUMERADORES, ESTRUCTURAS Y VARIABLES GLOBALES
+*/
+#define COUNT(x) sizeof(x)/sizeof(*x)                   // Macro para contar el numero de elementos de un array
+
 
 enum Teclado {ENTER, LEFT, UP, DOWN, RIGHT, UNKNOWN};
 
@@ -23,8 +28,12 @@ String Menu1[] = {"Fleje 10x10", "Fleje 10x15"};
 //Pantallas
 struct MainDisplay{
   //Atributs
+  
+  index = 0;
+  _size;
 
-  MainDisplay(String* txt1){
+
+  MainDisplay(String* txt1, byte size){
     //firstline
     lcd.setCursor(0, 0);
     lcd.print(" PROGRAM SELECT ");
@@ -38,7 +47,13 @@ struct MainDisplay{
 
   }
   //Meths
-  //void show#pragma region ()
+  void changeMenu(){
+    this.index++:
+    if(this.index < this._size-1 ){
+      this.index = 0;
+    }
+  }
+
 } ;
 
 void setup() {
@@ -47,7 +62,7 @@ void setup() {
   //set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
 
-  MainDisplay Pantalla1(&Menu1[0]);
+  MainDisplay Pantalla1(&Menu1[0], COUNT(Menu1));
 
 
 }
