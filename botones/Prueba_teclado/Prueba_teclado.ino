@@ -23,14 +23,14 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 enum Teclado {ENTER, LEFT, UP, DOWN, RIGHT, UNKNOWN};
 
-String Menu1[] = {"Fleje 10x10", "Fleje 10x15"};
+String Menu1[] = {"Fleje 10x10", "Fleje 10x15", "Fleje 18x15", "Fleje 8x20", "Fleje 30x30", "Fleje 8x8"};
 
 //Pantallas
 struct MainDisplay{
   //Atributs
   
-  index = 0;
-  _size;
+  byte index = 0;
+  byte _size;
 
 
   MainDisplay(String* txt1, byte size){
@@ -48,13 +48,19 @@ struct MainDisplay{
   }
   //Meths
   void changeMenu(){
-    this.index++:
-    if(this.index < this._size-1 ){
-      this.index = 0;
+    this->index++;
+    if(this->index < this->_size-1 ){
+      this->index = 0;
     }
   }
 
+  byte getIndex(){
+    return this->index;
+  } 
+
 } ;
+
+MainDisplay Pantalla1(&Menu1[0], COUNT(Menu1));
 
 void setup() {
   
@@ -62,13 +68,23 @@ void setup() {
   //set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
 
-  MainDisplay Pantalla1(&Menu1[0], COUNT(Menu1));
+  //MainDisplay Pantalla1(&Menu1[0], COUNT(Menu1));
 
 
 }
 
 void loop() {
-  Serial.println(readButtons());
+
+  byte x = readButtons();
+  
+  
+  switch (x)
+  {
+  case RIGHT:
+    Pantalla1.changeMenu();
+    delay(200);
+    break;
+  }
 }
 
 
