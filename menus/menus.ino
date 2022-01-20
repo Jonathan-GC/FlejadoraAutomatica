@@ -37,17 +37,19 @@ String MenuFlejes[] = {"Fleje 10x10", "Fleje 10x15", "Fleje 18x15", "Fleje 8x20"
 struct PantallaPrincipal
 {
     String* _txt = NULL;
-    weight = 0; //Peso o valor del objeto  
+    byte weight = 0; //Peso o valor del objeto  
     
     PantallaPrincipal(String* txt, byte peso){
         _txt = txt;
-        byte weight=peso; 
+         weight=peso; 
 
             
         
     }
 
     void show(){
+        //to erase first
+        lcd.clear();
         //first line
         lcd.setCursor(1,0);
         lcd.print("PROGRAM FLEJE");
@@ -66,9 +68,16 @@ struct PantallaPrincipal
 
 void setup()
 {
-    PantallaPrincipal P1(&PantallaPrincipal[0], 0);
+    lcd.begin(LCD_colums, LCD_rows);
+    PantallaPrincipal P1(&MenuFlejes[0], 0);
     P1.show();
-    
+    delay(5000);
+    PantallaPrincipal P2(&MenuFlejes[1], 1);
+    P2.show();
+    delay(5000);
+    PantallaPrincipal P3(&MenuFlejes[2], 2);
+    P3.show();
+    delay(5000);
 }
 
 void loop()
