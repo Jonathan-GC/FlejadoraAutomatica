@@ -1,6 +1,13 @@
 #include <EEPROM.h>
 
 /***************************************
+    MACROS, CONSTANTES, ENUMERADORES, ESTRUCTURAS Y VARIABLES GLOBALES
+****************************************/
+    
+#define COUNT(x) sizeof(x)/sizeof(*x) // Macro para contar el numero de elementos de un array
+
+
+/***************************************
 LCD elementos necesarios para display
 ****************************************/
 
@@ -31,25 +38,32 @@ Pines necesarios para el funcionamiento del hardware
 /***************************************
 Variables de lista de flejes
 ****************************************/
-String MenuFlejes[] = {"Fleje 10x10", "Fleje 10x15", "Fleje 18x15", "Fleje 8x20", "Fleje 30x30", "Fleje 8x8"};
+String MenuFlejes[] = {"Fleje10x10", "Fleje\t10x15", "Fleje  18x15", "Fleje 8x20", "Fleje  30x30", "Fleje  8x8"};
 
 
 struct PantallaPrincipal
 {
-    String* _txt = NULL;
-    byte weight = 0; //Peso o valor del objeto  
+    String* _txt = NULL;    //Puntero al menu asignado
+    byte weight = 0;        //Peso o valor del objeto  
     
+
     PantallaPrincipal(String* txt, byte peso){
+        /*  Se construye el objeto con su array y peso, cuestion de poder implementar 
+            cientos de panntallas principales y sea dinamico, preferiblemente crear el 
+            objeto con apuntadores
+        */
+
         _txt = txt;
          weight=peso; 
 
-            
-        
     }
 
-    ~PantallaPrincipal(){};
+    ~PantallaPrincipal(){}; //Destructor
 
     void show(){
+        /*  Funcion para mostrar el contenido en el menú
+        */
+
         //to erase first
         lcd.clear();
         //first line
@@ -67,13 +81,41 @@ struct PantallaPrincipal
 
 };
 
+struct PantallaSecundaria
+{
+    
+};
+
 
 void setup()
 {
+    Serial.begin(9600);
     lcd.begin(LCD_colums, LCD_rows);
     lcd.clear();
 
+
+    String _txt = MenuFlejes[1];
+    _txt.toUpperCase();
+    Serial.println(_txt.length());
+    if(_txt.length()>8){
+        
+        
+        _txt.trim();
+        Serial.println(_txt);
+        Serial.println(_txt.length());
+
+    }
+    
+    lcd.clear();
+    lcd.setCursor(3,0);
+    lcd.print(_txt);
+
+    
+    /*
+
+    OBJETO FUNCIONAL menos uso de memoria
     PantallaPrincipal* displayMain = NULL;
+    -------------------------------------------------------------------------------
 
     for(byte i = 0; i < 6; i++){
         displayMain = new PantallaPrincipal(&MenuFlejes[i], i);
@@ -85,7 +127,7 @@ void setup()
     displayMain = NULL;
 
 
-    /*
+    -------------------------------------------------------------------------------
     PantallaPrincipal P1(&MenuFlejes[0], 0);
     P1.show();
     delay(5000);
