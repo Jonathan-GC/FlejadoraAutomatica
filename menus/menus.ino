@@ -38,8 +38,9 @@ Pines necesarios para el funcionamiento del hardware
 /***************************************
 Variables de lista de flejes
 ****************************************/
-String MenuFlejes[] = {"Fleje10x10", "Fleje\t10x15", "Fleje  18x15", "Fleje 8x20", "Fleje  30x30", "Fleje  8x8"};
+String MenuFlejes[] = {"Fleje10x10", "Fleje 10x15", "Fleje 18x15", "Fleje 8x20", "Fleje 30x30", "Fleje 8x8"};
 
+enum Teclado {ENTER, LEFT, UP, DOWN, RIGHT, UNKNOWN};
 
 struct PantallaPrincipal
 {
@@ -83,7 +84,56 @@ struct PantallaPrincipal
 
 struct PantallaSecundaria
 {
+    byte figurado[6][2];
+    byte weight = 0;        //Peso o valor del objeto  
+    String* _txt = NULL;    //Puntero al menu asignado
+
+    PantallaSecundaria(String* txt, byte fleje[6][2], byte peso){
+        for(byte row = 0; row < 6; row++){
+           for(byte col = 0; col < 2; col++){
+               figurado[row][col]=fleje[row][col];
+           }
+        }
+
+        weight = peso;
+        _txt = txt;
+
+    }
+
+    ~PantallaSecundaria(){}; //Destructor
+
+    void show(){
+        // Lo vuelvo mayuscula para que se vea el cambio en la interfaz
+        _txt->toUpperCase();
+
+        //ELimino los espacios para que se vea  responsive
+        if(_txt->length()>10){
+            _txt->remove(5,1);
+        }
     
+        //First line
+        lcd.clear();
+        lcd.setCursor(3,0);
+        lcd.print(*_txt);
+
+        //Second line
+        lcd.setCursor(0, 1);
+        lcd.print("<");
+        lcd.print("P1");
+
+        lcd.setCursor(5, 1);
+        lcd.print(figurado[1][0]);
+        lcd.print(" cm");
+        
+        lcd.setCursor(11, 1);
+        lcd.print(figurado[0][1]);
+        lcd.print("'");
+
+        lcd.setCursor(LCD_colums - 1, 1);
+        lcd.print(">");
+
+
+    }
 };
 
 
@@ -93,25 +143,32 @@ void setup()
     lcd.begin(LCD_colums, LCD_rows);
     lcd.clear();
 
-
-    String _txt = MenuFlejes[1];
-    _txt.toUpperCase();
-    Serial.println(_txt.length());
-    if(_txt.length()>8){
+    byte fleje[6][2]={
+        {5, 45},
+        {10,90},
+        {10,90},
+        {10,90},
+        {10,90},
+        {5 ,45}
         
-        
-        _txt.trim();
-        Serial.println(_txt);
-        Serial.println(_txt.length());
+    };
 
+    /*
+
+    //OBJETO FUNCIONAL menos uso de memoria
+    PantallaSecundaria* displaySecond = NULL;
+    for(byte i = 0; i < 6; i++){
+        displaySecond = new PantallaSecundaria(&MenuFlejes[i], fleje, i);
+        displaySecond->show();
+        delay(3000);
     }
     
-    lcd.clear();
-    lcd.setCursor(3,0);
-    lcd.print(_txt);
+    delete[] displaySecond;
+    displaySecond = NULL;
+    
 
     
-    /*
+    
 
     OBJETO FUNCIONAL menos uso de memoria
     PantallaPrincipal* displayMain = NULL;
