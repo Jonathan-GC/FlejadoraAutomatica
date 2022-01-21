@@ -47,6 +47,8 @@ struct PantallaPrincipal
         
     }
 
+    ~PantallaPrincipal(){};
+
     void show(){
         //to erase first
         lcd.clear();
@@ -69,15 +71,34 @@ struct PantallaPrincipal
 void setup()
 {
     lcd.begin(LCD_colums, LCD_rows);
+    lcd.clear();
+
+    PantallaPrincipal* displayMain = NULL;
+
+    for(byte i = 0; i < 6; i++){
+        displayMain = new PantallaPrincipal(&MenuFlejes[i], i);
+        displayMain->show();
+        delay(3000);
+    }
+
+    delete [] displayMain;
+    displayMain = NULL;
+
+
+    /*
     PantallaPrincipal P1(&MenuFlejes[0], 0);
     P1.show();
     delay(5000);
+    
     PantallaPrincipal P2(&MenuFlejes[1], 1);
     P2.show();
     delay(5000);
+    //delete P2;
     PantallaPrincipal P3(&MenuFlejes[2], 2);
     P3.show();
     delay(5000);
+    //delete P3;
+    */
 }
 
 void loop()
