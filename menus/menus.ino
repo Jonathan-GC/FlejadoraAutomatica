@@ -7,6 +7,12 @@
 #define COUNT(x) sizeof(x)/sizeof(*x) // Macro para contar el numero de elementos de un array
 
 
+unsigned long currentTimeMillis = 0;
+unsigned long previosTimeMillis = 0;
+
+
+
+
 /***************************************
 LCD elementos necesarios para display
 ****************************************/
@@ -119,7 +125,8 @@ struct PantallaSecundaria
         //Second line
         lcd.setCursor(0, 1);
         lcd.print("<");
-        lcd.print("P1");
+        lcd.print("P");
+        lcd.print(weight);
 
         lcd.setCursor(5, 1);
         lcd.print(figurado[1][0]);
@@ -134,7 +141,42 @@ struct PantallaSecundaria
 
 
     }
+
+    void selectPuntoX(){
+        //Funcion para poner a parpadear la pantalla cuando quiera cambiar el punto el usuario
+        bool flag = 1;
+        bool stateBlink = 1;
+        while(flag){
+            currentTimeMillis = millis();
+            if(currentTimeMillis - previosTimeMillis > 500 ){
+
+                if(stateBlink){
+                    //Desaparece
+                    lcd.setCursor(1, 1);
+                    lcd.print("  ");
+                    stateBlink = 0;
+
+                }else{
+                    
+                    //Aparece
+                    lcd.setCursor(1, 1);
+                    lcd.print("P");
+                    lcd.print(weight);
+                    stateBlink = 1;
+                }
+                previosTimeMillis = currentTimeMillis;
+            }
+            
+
+            if (analogRead(A0)< 10){
+                flag=0;
+            }
+        }
+        
+        
+    }
 };
+
 
 
 void setup()
@@ -153,22 +195,25 @@ void setup()
         
     };
 
-    /*
+    
 
     //OBJETO FUNCIONAL menos uso de memoria
     PantallaSecundaria* displaySecond = NULL;
     for(byte i = 0; i < 6; i++){
         displaySecond = new PantallaSecundaria(&MenuFlejes[i], fleje, i);
         displaySecond->show();
-        delay(3000);
+        delay(1000);
     }
     
+    displaySecond->selectPuntoX();
+
+
     delete[] displaySecond;
     displaySecond = NULL;
     
 
     
-    
+    /*
 
     OBJETO FUNCIONAL menos uso de memoria
     PantallaPrincipal* displayMain = NULL;
@@ -203,4 +248,16 @@ void setup()
 void loop()
 {
     
+}
+
+Teclado readButtons(){
+  short keyVal = analogRead(pinTeclado);
+  
+  if(keyVal >= 720 && keyVal <= 725) return ENTER;
+  else if(keyVal >= 480 && keyVal <= 485 ) return LEFT;
+  else if(keyVal >= 304 && keyVal <= 319) return DOWN;
+  else if(keyVal >= 129 && keyVal <= 135) return UP;
+  else if(keyVal == 0 && keyVal <= 5) return LEFT;
+  else return UNKNOWN;
+
 }
