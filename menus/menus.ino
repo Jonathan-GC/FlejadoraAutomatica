@@ -41,12 +41,39 @@ Pines necesarios para el funcionamiento del hardware
 #define pinDoblar_90 12 // Pin I11 PLC para giro retraer
 #define pinTeclado   A0 // pin interfaz LCD
 
+
+
 /***************************************
 Variables de lista de flejes
 ****************************************/
+/*
+    FIGURADO FLEJE CONVENCIONAL
+              2____3
+              |    |
+              |//__|
+              1 5  4
+*/
+# define valueVerticesXFleje  5
+
 String MenuFlejes[] = {"Fleje10x10", "Fleje 10x15", "Fleje 18x15", "Fleje 8x20", "Fleje 30x30", "Fleje 8x8"};
 
 enum Teclado {ENTER, LEFT, UP, DOWN, RIGHT, UNKNOWN};
+
+/***************************************
+Funciones
+****************************************/
+Teclado readButtons(){
+  short keyVal = analogRead(pinTeclado);
+  
+  if(keyVal >= 720 && keyVal <= 725) return ENTER;
+  else if(keyVal >= 480 && keyVal <= 485 ) return LEFT;
+  else if(keyVal >= 304 && keyVal <= 319) return DOWN;
+  else if(keyVal >= 129 && keyVal <= 135) return UP;
+  else if(keyVal == 0 && keyVal <= 5) return RIGHT;
+  else return UNKNOWN;
+
+}
+
 
 struct PantallaPrincipal
 {
@@ -92,6 +119,7 @@ struct PantallaSecundaria
 {
     byte figurado[6][2];
     byte weight = 0;        //Peso o valor del objeto  
+    byte index = 0;         //Indice para buscar en el figurado
     String* _txt = NULL;    //Puntero al menu asignado
 
     PantallaSecundaria(String* txt, byte fleje[6][2], byte peso){
@@ -126,14 +154,14 @@ struct PantallaSecundaria
         lcd.setCursor(0, 1);
         lcd.print("<");
         lcd.print("P");
-        lcd.print(weight);
+        lcd.print(index);
 
         lcd.setCursor(5, 1);
-        lcd.print(figurado[1][0]);
+        lcd.print(figurado[index][0]);
         lcd.print(" cm");
         
         lcd.setCursor(11, 1);
-        lcd.print(figurado[0][1]);
+        lcd.print(figurado[index][1]);
         lcd.print("'");
 
         lcd.setCursor(LCD_colums - 1, 1);
@@ -146,38 +174,166 @@ struct PantallaSecundaria
         //Funcion para poner a parpadear la pantalla cuando quiera cambiar el punto el usuario
         bool flag = 1;
         bool stateBlink = 1;
+        byte valueToEdit = 0; 
+        boolean angleToEdit = false;
+        
         while(flag){
             currentTimeMillis = millis();
-            if(currentTimeMillis - previosTimeMillis > 500 ){
+            if(currentTimeMillis - previosTimeMillis > 250 ){
+                
+                Teclado but = readButtons();
+
+                if (but == ENTER){
+                    flag=0;
+                    stateBlink = 1; //La igualo a 1 para forzar a que se vea antes de salir y evitar que desaparezca
+                }
+                else if (but == DOWN)
+                {
+                    if(valueToEdit == 1){
+                        figurado[index][0]--;
+                        figurado[index][0] %= 32;
+                    }
+                    else if(valueToEdit == 2){
+                        angleToEdit?figurado[index][1]=45:figurado[index][1]=90;
+                    }
+                    else{
+                        index++;
+                        index%=6;
+                        show(); // refrescar pantalla
+                    }
+                    
+                    
+                }
+                else if (but == UP)
+                {   
+                    if(valueToEdit == 1){
+                        figurado[index][0]++;
+                        figurado[index][0] %= 32;
+                    }
+                    else if(valueToEdit == 2){
+                        angleToEdit?figurado[index][1]=90:figurado[index][1]=45;
+                    }
+                    else{
+                        index--;
+                        index==255?index=5:index;
+                        index%=6;
+                        show(); // refrescar pantalla
+                    }
+                }
+
+                else if (but == RIGHT)
+                {
+                    valueToEdit++;
+                    valueToEdit%=3;
+                    show(); // refrescar pantalla
+                }
+                else if (but == LEFT)
+                {
+                    valueToEdit--;
+                    valueToEdit==255?valueToEdit=2:valueToEdit;
+                    valueToEdit%=3;
+                    show(); // refrescar pantalla
+                }
+                
+                Serial.println(angleToEdit);
 
                 if(stateBlink){
                     //Desaparece
-                    lcd.setCursor(1, 1);
+                    switch (valueToEdit)
+                    {
+                        case 0:
+                            lcd.setCursor(1, 1);
+                            break;
+                        case 1:
+                            lcd.setCursor(5, 1);
+                        break;
+                        case 2:
+                            lcd.setCursor(11, 1);
+                        break;
+                    }
+                    
                     lcd.print("  ");
                     stateBlink = 0;
 
                 }else{
                     
                     //Aparece
-                    lcd.setCursor(1, 1);
-                    lcd.print("P");
-                    lcd.print(weight);
+                    show();
                     stateBlink = 1;
                 }
                 previosTimeMillis = currentTimeMillis;
             }
             
 
-            if (analogRead(A0)< 10){
-                flag=0;
-            }
+            
         }
-        
-        
+    
     }
 };
 
+struct PantallaTerciaria{
+    String* _txt = NULL;    //Puntero al menu asignado
+    /*Pantalla para aceptar el proceso e iniciar*/
+    
+    PantallaTerciaria(String* txt, byte fleje[6][2]){
+        _txt = txt;
+    }
 
+    
+
+    void show(){
+        
+        // Lo vuelvo mayuscula para que se vea el cambio en la interfaz
+        _txt->toUpperCase();
+
+        //ELimino los espacios para que se vea  responsive
+        if(_txt->length()>10){
+            _txt->remove(5,1);
+        }
+    
+        //First line
+        lcd.clear();
+        lcd.setCursor(3,0);
+        lcd.print(*_txt);
+
+        //Second line
+        lcd.setCursor(0,1);
+        lcd.print("<");
+        lcd.setCursor(3,1);
+        lcd.print("Enter(2s)");
+
+    }
+
+    boolean ordenArrancar(){
+        
+        //se le agrega un while para que entre en un bucle
+        bool flag = 1;
+        while(flag){
+            previosTimeMillis = millis();
+
+            if(readButtons() == LEFT){
+                flag = 0;
+            }
+
+            while(readButtons() == ENTER && flag == 1){
+                currentTimeMillis = millis();
+                if(currentTimeMillis - previosTimeMillis > 2000){
+                    lcd.clear();
+                    lcd.setCursor(3,0);
+                    lcd.print("En proceso");
+                    flag = 0;
+                }
+            }
+        }
+        if(flag == 0){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+};
 
 void setup()
 {
@@ -195,14 +351,19 @@ void setup()
         
     };
 
-    
+    PantallaTerciaria *displayTerciario = NULL;
 
+    displayTerciario = new PantallaTerciaria(&MenuFlejes[1], fleje);
+    displayTerciario->show();
+    displayTerciario->ordenArrancar();
+
+    /*
     //OBJETO FUNCIONAL menos uso de memoria
     PantallaSecundaria* displaySecond = NULL;
     for(byte i = 0; i < 6; i++){
         displaySecond = new PantallaSecundaria(&MenuFlejes[i], fleje, i);
         displaySecond->show();
-        delay(1000);
+        delay(500);
     }
     
     displaySecond->selectPuntoX();
@@ -213,12 +374,12 @@ void setup()
     
 
     
-    /*
-
-    OBJETO FUNCIONAL menos uso de memoria
-    PantallaPrincipal* displayMain = NULL;
-    -------------------------------------------------------------------------------
-
+    */
+    
+    //OBJETO FUNCIONAL menos uso de memoria
+ //   PantallaPrincipal* displayMain = NULL;
+    //-------------------------------------------------------------------------------
+/*
     for(byte i = 0; i < 6; i++){
         displayMain = new PantallaPrincipal(&MenuFlejes[i], i);
         displayMain->show();
@@ -227,8 +388,8 @@ void setup()
 
     delete [] displayMain;
     displayMain = NULL;
-
-
+*/
+/*
     -------------------------------------------------------------------------------
     PantallaPrincipal P1(&MenuFlejes[0], 0);
     P1.show();
@@ -250,14 +411,3 @@ void loop()
     
 }
 
-Teclado readButtons(){
-  short keyVal = analogRead(pinTeclado);
-  
-  if(keyVal >= 720 && keyVal <= 725) return ENTER;
-  else if(keyVal >= 480 && keyVal <= 485 ) return LEFT;
-  else if(keyVal >= 304 && keyVal <= 319) return DOWN;
-  else if(keyVal >= 129 && keyVal <= 135) return UP;
-  else if(keyVal == 0 && keyVal <= 5) return LEFT;
-  else return UNKNOWN;
-
-}
