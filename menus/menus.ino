@@ -335,6 +335,12 @@ struct PantallaTerciaria{
 
 };
 
+/***************************************
+Punteros
+****************************************/
+    PantallaPrincipal* displayMain = NULL;
+
+
 void setup()
 {
     Serial.begin(9600);
@@ -351,11 +357,11 @@ void setup()
         
     };
 
-    PantallaTerciaria *displayTerciario = NULL;
+//    PantallaTerciaria *displayTerciario = NULL;
 
-    displayTerciario = new PantallaTerciaria(&MenuFlejes[1], fleje);
-    displayTerciario->show();
-    displayTerciario->ordenArrancar();
+//    displayTerciario = new PantallaTerciaria(&MenuFlejes[1], fleje);
+//    displayTerciario->show();
+//    displayTerciario->ordenArrancar();
 
     /*
     //OBJETO FUNCIONAL menos uso de memoria
@@ -404,10 +410,25 @@ void setup()
     delay(5000);
     //delete P3;
     */
+
+    for(byte i = 0; i < 6; i++){
+        displayMain = new PantallaPrincipal(&MenuFlejes[i], i);
+        displayMain->show();
+        delay(3000);
+    }
+    
 }
 
 void loop()
 {
-    
+    //displayMain->show();
+    Teclado Button = readButtons();
+
+    if(Button == RIGHT){
+        delay(200);
+        displayMain[0].show();
+        delay(5000);
+    }
+    delay(100);
 }
 
