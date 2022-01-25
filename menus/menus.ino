@@ -338,7 +338,7 @@ struct PantallaTerciaria{
 /***************************************
 Punteros
 ****************************************/
-    PantallaPrincipal* displayMain = NULL;
+    PantallaPrincipal** displayMain = NULL;
 
 
 void setup()
@@ -411,24 +411,27 @@ void setup()
     //delete P3;
     */
 
+    displayMain = new PantallaPrincipal*[6];
+
     for(byte i = 0; i < 6; i++){
-        displayMain = new PantallaPrincipal(&MenuFlejes[i], i);
-        displayMain->show();
-        delay(3000);
+        displayMain[i] = new PantallaPrincipal(&MenuFlejes[i], i);
+        displayMain[i]->show();
+        delay(2000);
     }
     
 }
 
 void loop()
 {
-    //displayMain->show();
+    
     Teclado Button = readButtons();
 
     if(Button == RIGHT){
         delay(200);
-        displayMain[0].show();
+        displayMain[0]->show();
         delay(5000);
     }
     delay(100);
+    
 }
 
