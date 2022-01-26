@@ -410,20 +410,56 @@ void setup()
     delay(5000);
     //delete P3;
     */
+String Miguel[5]={"Hola", "Hola mUNDO", "Hola tECNO", "Hola bOT", "Hola mAMI"};
 
-    displayMain = new PantallaPrincipal*[6];
+displayMain = new PantallaPrincipal* [1000000000];
+
+for(byte i=0; i<1000000000;i++){
+    displayMain[i] = new PantallaPrincipal(&Miguel[i],i);
+    displayMain[i]->show();
+    delay(3000);
+}
+
+
+for(int i=0; i<5;i++){
+    displayMain = new PantallaPrincipal(&Miguel[i],i);
+    displayMain->show(); 
+    delay(2000);
+}
+/*
+PantallaPrincipal Objeto(&Miguel[0],8);
+Objeto.show();
+delay(5000); 
+PantallaPrincipal Objeto1(&Miguel[1],9);
+Objeto1.show();
+delay(5000);
+PantallaPrincipal Objeto2(&Miguel[2],10);
+Objeto2.show();
+delay(5000);
+PantallaPrincipal Objeto3(&Miguel[3],11);
+Objeto3.show();
+delay(5000);
+PantallaPrincipal Objeto4(&Miguel[4],12);
+Objeto4.show();
+delay(5000);
+*/
+/*
+    PantallaPrincipal nameVar(&MenuFlejes[0], 0);
+    
+    displayMain = new PantallaPrincipal* [6];
 
     for(byte i = 0; i < 6; i++){
         displayMain[i] = new PantallaPrincipal(&MenuFlejes[i], i);
         displayMain[i]->show();
         delay(2000);
     }
-    
+  */  
 }
+
 
 void loop()
 {
-    
+    /*
     Teclado Button = readButtons();
 
     if(Button == RIGHT){
@@ -432,6 +468,7 @@ void loop()
         delay(5000);
     }
     delay(100);
+    */
     
 }
 
