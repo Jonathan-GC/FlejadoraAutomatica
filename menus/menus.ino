@@ -59,6 +59,18 @@ String MenuFlejes[] = {"Fleje10x10", "Fleje 10x15", "Fleje 18x15", "Fleje 8x20",
 
 enum Teclado {ENTER, LEFT, UP, DOWN, RIGHT, UNKNOWN};
 
+byte fleje[6][2]={
+        {5, 45},
+        {10,90},
+        {10,90},
+        {10,90},
+        {10,90},
+        {5 ,45}
+        
+    };
+
+
+
 /***************************************
 Funciones
 ****************************************/
@@ -88,8 +100,8 @@ struct PantallaPrincipal
         */
 
         _txt = txt;
-         weight=peso; 
-
+        weight=peso; 
+        Serial.print(*_txt); Serial.print("\tDireccion:\t"); Serial.println(long(_txt));
     }
 
     ~PantallaPrincipal(){}; //Destructor
@@ -121,7 +133,7 @@ struct PantallaSecundaria
     byte weight = 0;        //Peso o valor del objeto  
     byte index = 0;         //Indice para buscar en el figurado
     String* _txt = NULL;    //Puntero al menu asignado
-
+    bool setConfig = false; //Setear configuraciones
     PantallaSecundaria(String* txt, byte fleje[6][2], byte peso){
         for(byte row = 0; row < 6; row++){
            for(byte col = 0; col < 2; col++){
@@ -170,13 +182,22 @@ struct PantallaSecundaria
 
     }
 
+    bool isEligiendo(){
+        if (setConfig)
+            return true;
+        else
+            return false;
+        
+    }
+
     void selectPuntoX(){
         //Funcion para poner a parpadear la pantalla cuando quiera cambiar el punto el usuario
         bool flag = 1;
         bool stateBlink = 1;
         byte valueToEdit = 0; 
         boolean angleToEdit = false;
-        
+        setConfig = false; 
+
         while(flag){
             currentTimeMillis = millis();
             if(currentTimeMillis - previosTimeMillis > 250 ){
@@ -220,7 +241,6 @@ struct PantallaSecundaria
                         show(); // refrescar pantalla
                     }
                 }
-
                 else if (but == RIGHT)
                 {
                     valueToEdit++;
@@ -235,8 +255,6 @@ struct PantallaSecundaria
                     show(); // refrescar pantalla
                 }
                 
-                Serial.println(angleToEdit);
-
                 if(stateBlink){
                     //Desaparece
                     switch (valueToEdit)
@@ -267,6 +285,9 @@ struct PantallaSecundaria
 
             
         }
+        //Lo muestro nuevamente para evitar que se quede en blanco despues de haber seleccionado
+        show();
+        setConfig = true;
     
     }
 };
@@ -279,7 +300,7 @@ struct PantallaTerciaria{
         _txt = txt;
     }
 
-    
+    ~PantallaTerciaria(){}; //Destructor
 
     void show(){
         
@@ -322,6 +343,7 @@ struct PantallaTerciaria{
                     lcd.setCursor(3,0);
                     lcd.print("En proceso");
                     flag = 0;
+                    delay(5000);
                 }
             }
         }
@@ -341,21 +363,26 @@ Punteros
     PantallaPrincipal** displayMain = NULL;
 
 
+void crearPantallaPrincipal(){
+    //Creo un escenario para 6 objetos diferentes de pantalla principal
+    displayMain = new PantallaPrincipal* [6];
+    for(byte i = 0; i < 6; i++){
+        displayMain[i] = new PantallaPrincipal(&MenuFlejes[i], i);
+        Serial.print(*displayMain[i]->_txt);
+        Serial.print("\tDireccion Obj:\t"); Serial.println(long(displayMain[i]));
+    }
+
+    Serial.print("\tPuntero Padre:\t"); Serial.println(long(displayMain));
+}
+
+
 void setup()
 {
+    delay(200);
     Serial.begin(9600);
     lcd.begin(LCD_colums, LCD_rows);
     lcd.clear();
 
-    byte fleje[6][2]={
-        {5, 45},
-        {10,90},
-        {10,90},
-        {10,90},
-        {10,90},
-        {5 ,45}
-        
-    };
 
 //    PantallaTerciaria *displayTerciario = NULL;
 
@@ -410,65 +437,111 @@ void setup()
     delay(5000);
     //delete P3;
     */
-String Miguel[5]={"Hola", "Hola mUNDO", "Hola tECNO", "Hola bOT", "Hola mAMI"};
-
-displayMain = new PantallaPrincipal* [1000000000];
-
-for(byte i=0; i<1000000000;i++){
-    displayMain[i] = new PantallaPrincipal(&Miguel[i],i);
-    displayMain[i]->show();
-    delay(3000);
-}
 
 
-for(int i=0; i<5;i++){
-    displayMain = new PantallaPrincipal(&Miguel[i],i);
-    displayMain->show(); 
-    delay(2000);
-}
-/*
-PantallaPrincipal Objeto(&Miguel[0],8);
-Objeto.show();
-delay(5000); 
-PantallaPrincipal Objeto1(&Miguel[1],9);
-Objeto1.show();
-delay(5000);
-PantallaPrincipal Objeto2(&Miguel[2],10);
-Objeto2.show();
-delay(5000);
-PantallaPrincipal Objeto3(&Miguel[3],11);
-Objeto3.show();
-delay(5000);
-PantallaPrincipal Objeto4(&Miguel[4],12);
-Objeto4.show();
-delay(5000);
-*/
-/*
-    PantallaPrincipal nameVar(&MenuFlejes[0], 0);
+    crearPantallaPrincipal();
     
-    displayMain = new PantallaPrincipal* [6];
-
-    for(byte i = 0; i < 6; i++){
-        displayMain[i] = new PantallaPrincipal(&MenuFlejes[i], i);
-        displayMain[i]->show();
-        delay(2000);
-    }
-  */  
+  
 }
 
+
+short desplazamiento = 0; 
+boolean startProcess = 0;
 
 void loop()
 {
-    /*
+    
     Teclado Button = readButtons();
 
+
     if(Button == RIGHT){
-        delay(200);
-        displayMain[0]->show();
-        delay(5000);
+        delay(250);
+        desplazamiento++;
+        desplazamiento = desplazamiento % 6;
+        Serial.print("Desplazamiento: ");Serial.println(desplazamiento);
+        Serial.print(*displayMain[desplazamiento]->_txt);
+        Serial.print("\tDireccion:\t"); Serial.println(long(displayMain[desplazamiento]->_txt));
+    }  
+
+    else if(Button == LEFT){
+        delay(250);
+        desplazamiento--; 
+        if(desplazamiento<0){
+            desplazamiento=5;
+        }
+        Serial.print("Desplazamiento: ");Serial.println(desplazamiento);
+        Serial.print(*displayMain[desplazamiento]->_txt);
+        Serial.print("\tDireccion:\t"); Serial.println(long(displayMain[desplazamiento]->_txt));
     }
+    else if(Button == ENTER){
+        delay(250);
+        byte index = displayMain[desplazamiento]->weight;
+
+        ///***************
+        Serial.println(*displayMain[0]->_txt);
+        ///***************
+
+        // 2. Limpiar memoria
+        //for(byte i = 0; i < 6; i++) delete[] displayMain[i];
+        
+        Serial.print("Selecciono: "); Serial.println(index);
+        
+        // 3. Crear el nuevo objeto pantalla secundaria
+        PantallaSecundaria* displaySecond = new PantallaSecundaria(&MenuFlejes[index], fleje, index);
+        //displaySecond = new PantallaSecundaria(&MenuFlejes[index], fleje, index);
+        displaySecond->show();
+        
+
+        // 4. Elegir la configuracion
+        if (!displaySecond->isEligiendo()){
+            displaySecond->selectPuntoX();  
+            ///***************
+            //Serial.println(*displayMain[0]->_txt);
+            ///***************  
+        }
+
+        // 5. Reconfirmar si realmente eligio o cambio configuracion
+        if (displaySecond->isEligiendo()){
+            PantallaTerciaria *displayTerciario = new PantallaTerciaria(&MenuFlejes[index], fleje);;
+
+            //displayTerciario = new PantallaTerciaria(&MenuFlejes[index], fleje);
+            displayTerciario->show();
+
+            ///***************
+            //Serial.println(*displayMain[0]->_txt);
+            ///***************  
+            if (displayTerciario->ordenArrancar()){
+                
+                startProcess = 1;
+
+                //limpiar memoria y prepararla para el encoder 
+                for(byte i = 0; i < 6; i++) delete[] displayMain[i];
+                delete[] displayMain;
+
+                //limpiar la memoria de la segunda pantalla
+                delete[] displaySecond;
+
+                //limpiar la memoria de la segunda pantalla
+                delete[] displayTerciario;
+
+            }
+            else{
+                startProcess = 0;
+                Serial.println(*displayMain[0]->_txt);
+                delay(5000);
+            }
+        }
+        
+        Serial.println("salio"); 
+        displayMain = 832;
+        displayMain[0] = 846;       
+        ///***************
+        //Serial.println(MenuFlejes[0]);
+        ///***************  
+    }
+  
+    displayMain[desplazamiento]->show();
     delay(100);
-    */
-    
 }
+
 
