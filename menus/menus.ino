@@ -521,7 +521,7 @@ void loop()
                 //limpiar la memoria de la segunda pantalla
                 delete[] displaySecond;
 
-                //limpiar la memoria de la segunda pantalla
+                //limpiar la memoria de la tercera pantalla
                 delete[] displayTerciario;
 
             }
@@ -529,10 +529,21 @@ void loop()
                 startProcess = 0;
                 Serial.println(*displayMain[0]->_txt);
                 delay(5000);
+                //limpiar la memoria de la tercera pantalla
+                //delete[] displayTerciario; 
+
+                //limpiar la memoria de la segunda pantalla
+                //delete[] displaySecond;
+
+                
             }
         }
+
         
         Serial.println("salio"); 
+       
+        
+        
         displayMain = 832;
         displayMain[0] = 846;       
         ///***************
