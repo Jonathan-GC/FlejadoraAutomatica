@@ -44,36 +44,9 @@ void setup() {
 int presionado = 0;
 
 void loop() {
-   if(digitalRead(A1) == 1){
-      presionado = 1; 
-      delay(200);
-   }
-   if (digitalRead(A1) == 0 && presionado == 1){
-    Serial.println("Entro");
-    Serial.print("Pin A2: I6 ");Serial.println(digitalRead(A2));
-    Serial.print("Pin A3: I7 ");Serial.println(digitalRead(A3));
-    presionado = 0;
-      for(int i = 0; i < 6; i++){
-        int Medida = 0;
-        Medida = Fleje1[i];
-        Serial.println(deCmAPulsos(Medida));
-        Medida = deCmAPulsos(Medida);
-        
-        digitalWrite(A2, LOW);
-        while(value < Medida){
-          Encoder();
-        }
-        digitalWrite(A2, HIGH);
-        digitalWrite(A3, LOW);
-        delay(500);
-        digitalWrite(A3, HIGH);
-        value = 0;
-        delay(2000);
-        
-     }
-     while(1);
-     
-   }
+
+   Encoder();
+
 }
 void Encoder (){
   currentTime = micros();
