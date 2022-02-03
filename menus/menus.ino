@@ -49,8 +49,9 @@ Pines necesarios para el funcionamiento del hardware
 
 #define pinPLCSignal A1 // Signal come PLC
 #define pinAlimentar A5 // Pin I6 PLC para alimentar
-#define pinDoblar_45 11 // Pin I7 PLC para giro 45°
-#define pinDoblar_90 12 // Pin I11 PLC para giro retraer
+#define pinDoblar_45 A4 // Pin I7 PLC para giro 45°
+#define pinRetraer   12 // Pin I11 PLC para giro retraer
+#define pinDoblar_90 11 // Pin I8 PLC para giro 90°
 #define pinTeclado   A0 // pin interfaz LCD
 
 /***************************************
@@ -86,11 +87,12 @@ void crearPantallaPrincipal();
 void Encoder ();
 int deCmAPulsos (int Cm);
 int dePulsosACm (int Pulsos);
+boolean inOrden();
 /***************************************
 Encoder
 ****************************************/
 
-#define ConstanteDeConversion 12.8 // con velocida de 26 en Driver Variador
+#define ConstanteDeConversion 10 // con velocida de 26 en Driver Variador
 #define ConstanteDeConversionPulsos 0,0612612
 
 #define channelPinA  2
@@ -100,7 +102,7 @@ unsigned char stateChannelA;
 unsigned char stateChannelB;
 unsigned char prevStateChannelA = 0;
 
-#define maxSteps = 9999;
+int maxSteps = 9999;
 int prevValue;
 int value;
 
@@ -402,16 +404,16 @@ void setup(){
 
     pinMode(channelPinA, INPUT_PULLUP);
     pinMode(channelPinB, INPUT_PULLUP);
-    pinMode(A1, INPUT_PULLUP);
-    pinMode(A5, OUTPUT); // Pin I6 PLC para alimentar
-    pinMode(A4, OUTPUT); // Pin I7 PLC para giro 45°
-    pinMode(11, OUTPUT); // Pin I8 PLC para giro 90°
-    pinMode(12, OUTPUT); // Pin I11 PLC para giro retraer
+    pinMode(pinPLCSignal, INPUT_PULLUP); // Signal come PLC
+    pinMode(pinAlimentar, OUTPUT); // Pin I6 PLC para alimentar
+    pinMode(pinDoblar_45, OUTPUT); // Pin I7 PLC para giro 45°
+    pinMode(pinDoblar_90, OUTPUT); // Pin I8 PLC para giro 90°
+    pinMode(pinRetraer, OUTPUT); // Pin I11 PLC para giro retraer
 
-    digitalWrite(A2, HIGH); //para apagarlos de inicio ya que es negado
-    digitalWrite(A3, HIGH); //para apagarlos de inicio ya que es negado
-    digitalWrite(11, HIGH); //para apagarlos de inicio ya que es negado
-    digitalWrite(12, HIGH); //para apagarlos de inicio ya que es negado
+    digitalWrite(pinAlimentar, HIGH); //para apagarlos de inicio ya que es negado
+    digitalWrite(pinDoblar_45, HIGH); //para apagarlos de inicio ya que es negado
+    digitalWrite(pinDoblar_90, HIGH); //para apagarlos de inicio ya que es negado
+    digitalWrite(pinRetraer, HIGH); //para apagarlos de inicio ya que es negado
 
     lcd.print(freeMemory());
     crearPantallaPrincipal();
@@ -428,127 +430,216 @@ byte index = 0;
 
 void loop() {
 
-if(!startProcess){   
-    Teclado Button = readButtons();
+    if(!startProcess){   
+        Teclado Button = readButtons();
 
-    if(Button == RIGHT){
-        delay(250);
-        desplazamiento++;
-        desplazamiento = desplazamiento % 6;
-        Serial.print("memoria: "); Serial.println(freeMemory());
-        //Serial.print("Desplazamiento: ");Serial.println(desplazamiento+1);
-        //Serial.print(*displayMain[desplazamiento+1]->_txt);
-        //Serial.print("\tDireccion:\t"); Serial.println(long(displayMain[desplazamiento+1]->_txt));
-    }  
- 
-    else if(Button == LEFT){
-        delay(250);
-        desplazamiento--; 
-        if(desplazamiento<0){
-            desplazamiento=5;
+        if(Button == RIGHT){
+            delay(250);
+            desplazamiento++;
+            desplazamiento = desplazamiento % 6;
+            Serial.print("memoria: "); Serial.println(freeMemory());
+            //Serial.print("Desplazamiento: ");Serial.println(desplazamiento+1);
+            //Serial.print(*displayMain[desplazamiento+1]->_txt);
+            //Serial.print("\tDireccion:\t"); Serial.println(long(displayMain[desplazamiento+1]->_txt));
+        }  
+    
+        else if(Button == LEFT){
+            delay(250);
+            desplazamiento--; 
+            if(desplazamiento<0){
+                desplazamiento=5;
+            }
+            Serial.print("memoria: "); Serial.println(freeMemory());
+            //Serial.print("Desplazamiento: ");Serial.println(desplazamiento+1);
+            //Serial.print(*displayMain[desplazamiento+1]->_txt);
+            //Serial.print("\tDireccion:\t"); Serial.println(long(displayMain[desplazamiento+1]->_txt));
         }
-        Serial.print("memoria: "); Serial.println(freeMemory());
-        //Serial.print("Desplazamiento: ");Serial.println(desplazamiento+1);
-        //Serial.print(*displayMain[desplazamiento+1]->_txt);
-        //Serial.print("\tDireccion:\t"); Serial.println(long(displayMain[desplazamiento+1]->_txt));
-    }
-    else if(Button == ENTER){
-        delay(250);
-        index = displayMain[desplazamiento+1]->weight;
-
-        ///***************
-        Serial.println(*displayMain[0]->_txt);
-        ///***************
-        Serial.print("memoria: "); Serial.println(freeMemory());
-        
-        Serial.print("Selecciono: "); Serial.println(index);
-        
-        // 3. Crear el nuevo objeto pantalla secundaria
-        PantallaSecundaria displaySecond(&MenuFlejes[index], fleje, index);
-        //displaySecond = new PantallaSecundaria(&MenuFlejes[index], fleje, index);
-        displaySecond.show();
-        
-        Serial.print("memoria: "); Serial.println(freeMemory());
-
-        // 4. Elegir la configuracion
-        if (!displaySecond.isEligiendo()){
-            displaySecond.selectPuntoX();  
-            ///***************
-            //Serial.println(*displayMain[0]->_txt);
-            ///***************  
-        }
-
-        // 5. Reconfirmar si realmente eligio o cambio configuracion
-        if (displaySecond.isEligiendo()){
-            PantallaTerciaria displayTerciario(&MenuFlejes[index], fleje);
-
-            //displayTerciario = new PantallaTerciaria(&MenuFlejes[index], fleje);
-            displayTerciario.show();
+        else if(Button == ENTER){
+            delay(250);
+            index = displayMain[desplazamiento+1]->weight;
 
             ///***************
-            //Serial.println(*displayMain[0]->_txt);
-            ///***************  
-
+            Serial.println(*displayMain[0]->_txt);
+            ///***************
+            Serial.print("memoria: "); Serial.println(freeMemory());
+            
+            Serial.print("Selecciono: "); Serial.println(index);
+            
+            // 3. Crear el nuevo objeto pantalla secundaria
+            PantallaSecundaria displaySecond(&MenuFlejes[index], fleje, index);
+            //displaySecond = new PantallaSecundaria(&MenuFlejes[index], fleje, index);
+            displaySecond.show();
+            
             Serial.print("memoria: "); Serial.println(freeMemory());
 
-            if (displayTerciario.ordenArrancar()){
-                Serial.println("Entro aca");
-                delay(5000);
-                startProcess = 1;
-                Serial.print("memoria: "); Serial.println(freeMemory());
+            // 4. Elegir la configuracion
+            if (!displaySecond.isEligiendo()){
+                displaySecond.selectPuntoX();  
+                ///***************
+                //Serial.println(*displayMain[0]->_txt);
+                ///***************  
             }
-            else{
-                startProcess = 0;
-                
-                Serial.print("memoria: "); Serial.println(freeMemory());
-                //limpiar la memoria de la tercera pantalla
 
-                //limpiar la memoria de la segunda pantalla
-                Serial.print("memoria: "); Serial.println(freeMemory());
-                
+            // 5. Reconfirmar si realmente eligio o cambio configuracion
+            if (displaySecond.isEligiendo()){
+                PantallaTerciaria displayTerciario(&MenuFlejes[index], fleje);
+
+                //displayTerciario = new PantallaTerciaria(&MenuFlejes[index], fleje);
+                displayTerciario.show();
+
+                ///***************
+                //Serial.println(*displayMain[0]->_txt);
+                ///***************  
 
                 Serial.print("memoria: "); Serial.println(freeMemory());
+
+                if (displayTerciario.ordenArrancar()){
+                    Serial.println("Entro aca");
+                    delay(5000);
+                    startProcess = 1;
+                    Serial.print("memoria: "); Serial.println(freeMemory());
+                }
+                else{
+                    startProcess = 0;
+                    
+                    Serial.print("memoria: "); Serial.println(freeMemory());
+                    //limpiar la memoria de la tercera pantalla
+
+                    //limpiar la memoria de la segunda pantalla
+                    Serial.print("memoria: "); Serial.println(freeMemory());
+                    
+
+                    Serial.print("memoria: "); Serial.println(freeMemory());
+                }
+
+            }
+
+            
+            //Serial.println("salio"); 
+        
+            
+                
+            ///***************
+            //Serial.println(MenuFlejes[0]);
+            ///***************  
+        }
+    
+        displayMain[desplazamiento+1]->show();
+        
+        delay(100); 
+    }
+    else if (startProcess) {
+    
+        //limpiar memoria y prepararla para el encoder 
+        for(byte i = 0; i < 7; i++) 
+        delete[] displayMain[index];
+        
+        delete[] displayMain;
+
+        //limpiar la memoria de la segunda pantalla
+        //delete[] displaySecond;
+
+        //limpiar la memoria de la tercera pantalla
+        //delete[] displayTerciario;
+        while(1){
+            Serial.print("memoria: "); Serial.println(freeMemory());
+            if(inOrden()){
+                for(int i = 0; i < 5; i++){
+                    Serial.print("Giro: ");Serial.println(i+1);
+                    //Toma medidas
+                    int Medida = 0;
+                    Medida = fleje[i][0];
+                    Serial.println(deCmAPulsos(Medida));
+                    Medida = deCmAPulsos(Medida);
+                    
+                    // 1.-------------------------------------------
+                    digitalWrite(pinAlimentar, LOW);
+                    //Alimente mientras este lleno
+                    while(value < Medida){
+                        Encoder();
+                    }
+                    digitalWrite(pinAlimentar, HIGH);
+                    value = 0;
+                    
+                    // 2.-------------------------------------------
+                    //Eleccion de ángulo
+                    if (fleje[i][1] == 45){
+                        digitalWrite(pinDoblar_45, LOW);
+                        delay(500);
+                        digitalWrite(pinDoblar_45, HIGH);
+                    }
+                    else{
+                        digitalWrite(11, LOW);
+                        delay(500);
+                        digitalWrite(11, HIGH);
+                    }
+                    
+                    /*
+                    if(i == 0 || i == 4 ){
+                    digitalWrite(A4, LOW);
+                    delay(500);
+                    digitalWrite(A4, HIGH);
+                    }
+                    
+                    else{
+                    digitalWrite(11, LOW);
+                    delay(500);
+                    digitalWrite(11, HIGH);
+                    }
+                    */
+                    while(!inOrden());
+                    
+                    //Esperar al que el plc de la orden de 
+                    //volver a arrancar
+                    
+                }
+
+                //Reset en el contador encoder0
+                value = 0;
+                Serial.println(F("Salio del for a corte"));
+                //Toma medidas
+                int Medida = 0;
+                
+                Medida = fleje[5][1];
+                Serial.println(deCmAPulsos(Medida));
+                Medida = deCmAPulsos(Medida);
+                
+                digitalWrite(pinRetraer, LOW);
+                //Alimente mientras este lleno
+
+                while(value < Medida){
+                    Encoder();
+                }
+
+                digitalWrite(pinRetraer, HIGH);
+                value = 0;
+
+            //while(1);
+                
             }
 
         }
+    
+            
 
         
-        //Serial.println("salio"); 
-       
-        
-             
-        ///***************
-        //Serial.println(MenuFlejes[0]);
-        ///***************  
-    }
-  
-    displayMain[desplazamiento+1]->show();
-    
-    delay(100); 
-}
-else if (startProcess) {
-  
-    //limpiar memoria y prepararla para el encoder 
-    for(byte i = 0; i < 7; i++) 
-      delete[] displayMain[index];
-    
-    delete[] displayMain;
-
-    //limpiar la memoria de la segunda pantalla
-    //delete[] displaySecond;
-
-    //limpiar la memoria de la tercera pantalla
-    //delete[] displayTerciario;
-    while(1){
-      Serial.print("memoria: "); Serial.println(freeMemory());
-      delay(1000);
-    }
-
-}   
+    }   
 
 }
 
-
+boolean inOrden(){
+   if(digitalRead(pinPLCSignal) == 1){
+      presionado = 1; 
+      delay(50);
+   }
+   if (digitalRead(pinPLCSignal) == 0 && presionado == 1){
+      presionado = 0;
+      return true;
+   }
+   else{
+      return false;
+   }
+}
 Teclado readButtons(){
   short keyVal = analogRead(pinTeclado);
   
@@ -568,7 +659,6 @@ Teclado readButtons(){
   else if(keyVal >= 0 && keyVal <= 96) {return RIGHT;}
   else {return UNKNOWN;}
 }
-
 void crearPantallaPrincipal(){
 
     //Creo un escenario para 6 objetos diferentes de pantalla principal
@@ -582,8 +672,6 @@ void crearPantallaPrincipal(){
 
     Serial.print("\tPuntero Padre:\t"); Serial.println(long(displayMain));
 }
-
-
 void Encoder (){
   currentTime = micros();
    if (currentTime >= (loopTime + timeThreshold))
@@ -617,10 +705,9 @@ void Encoder (){
       loopTime = currentTime;  // Actualizar tiempo
    }
    
-   // Otras tareas
+ 
 
 }
-
 int deCmAPulsos (int Cm){
   int Resultado;
   Resultado = Cm*ConstanteDeConversion;
