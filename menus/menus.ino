@@ -628,6 +628,15 @@ void loop() {
 }
 
 boolean inOrden(){
+  if(digitalRead(pinPLCSignal) == 1){
+    delay(300);
+    return true;        
+  }
+  else{
+    return false;
+  }
+  
+  /*
    if(digitalRead(pinPLCSignal) == 1){
       presionado = 1; 
       delay(50);
@@ -639,25 +648,26 @@ boolean inOrden(){
    else{
       return false;
    }
+*/   
 }
 Teclado readButtons(){
   short keyVal = analogRead(pinTeclado);
   
-    /*
+    
   if(keyVal >= 720 && keyVal <= 725) return ENTER;
   else if(keyVal >= 480 && keyVal <= 485 ) return LEFT;
   else if(keyVal >= 304 && keyVal <= 319) return DOWN;
   else if(keyVal >= 129 && keyVal <= 135) return UP;
   else if(keyVal >= 0 && keyVal <= 5) return RIGHT;
   else return UNKNOWN; 
-  */
-
+  
+/*
   if(keyVal >= 639 && keyVal <= 655){return ENTER;}
   else if(keyVal >= 400 && keyVal <= 420 ) {return LEFT;}
   else if(keyVal >= 250 && keyVal <= 300) {return DOWN;}
   else if(keyVal >= 97 && keyVal <= 110) {return UP;}
   else if(keyVal >= 0 && keyVal <= 96) {return RIGHT;}
-  else {return UNKNOWN;}
+  else {return UNKNOWN;}*/
 }
 void crearPantallaPrincipal(){
 
