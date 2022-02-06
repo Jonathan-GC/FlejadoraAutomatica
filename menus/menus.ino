@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 /***************************************
     MACROS, CONSTANTES, ENUMERADORES, ESTRUCTURAS Y VARIABLES GLOBALES
 ****************************************/
@@ -113,6 +114,21 @@ unsigned long loopTime;
 bool IsCW = true;
 
 //*****************************************************************
+struct Fleje
+{
+    byte fleje[6][2]={
+        {0, 0},
+        {0, 0},
+        {0, 0},
+        {0, 0},
+        {0, 0},
+        {0, 0}      
+    };
+    byte posMemory = 0;
+} Fleje1, Fleje2, Fleje3, Fleje4, Fleje5, Fleje6, ;
+
+
+
 struct PantallaPrincipal
 {
     String *_txt = NULL;    //Puntero al menu asignado
@@ -727,4 +743,24 @@ int dePulsosACm (int Pulsos){
   int Resultado;
   Resultado = Pulsos*ConstanteDeConversionPulsos;
   return Resultado;
+}
+
+void guardarEnEprom(){
+//
+    EEPROM.put(0, Fleje);
+}
+void obtenerDeEprom(){ 
+    EEPROM.get(0, Fleje1);
+    int direccion = sizeof(Fleje);
+    EEPROM.get(direccion, Fleje2);
+    direccion += sizeof(Fleje);
+    EEPROM.get(direccion, Fleje3);
+    direccion += sizeof(Fleje);
+    EEPROM.get(direccion, Fleje4);
+    direccion += sizeof(Fleje);
+    EEPROM.get(direccion, Fleje5);
+    direccion += sizeof(Fleje);
+    EEPROM.get(direccion, Fleje6);
+
+
 }
