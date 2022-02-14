@@ -1,3 +1,5 @@
+#include <EEPROM.h>
+
 /***************************************
     MACROS, CONSTANTES, ENUMERADORES, ESTRUCTURAS Y VARIABLES GLOBALES
 ****************************************/
@@ -89,6 +91,7 @@ void Encoder ();
 int deCmAPulsos (int Cm);
 int dePulsosACm (int Pulsos);
 boolean inOrden();
+void putEprom(byte fleje[6][2], int direction);
 /***************************************
 Encoder
 ****************************************/
@@ -321,7 +324,8 @@ struct PantallaSecundaria
     }
 };
 
-struct PantallaTerciaria{
+struct PantallaTerciaria
+{
     String* _txt = NULL;    //Puntero al menu asignado
     /*Pantalla para aceptar el proceso e iniciar*/
     
@@ -388,6 +392,19 @@ struct PantallaTerciaria{
     }
 
 };
+
+struct Fleje {
+    byte weight = 0;
+    byte fleje[6][2]={
+          {0, 45},
+          {0,90},
+          {0,90},
+          {0,90},
+          {0,90},
+          {0 ,45}      
+      };
+};
+
 
 /***************************************
 Punteros
@@ -732,4 +749,9 @@ int dePulsosACm (int Pulsos){
   int Resultado;
   Resultado = Pulsos*ConstanteDeConversionPulsos;
   return Resultado;
+}
+
+void putEprom(byte fleje[6][2], int direction){
+  Fleje FlejeEprom;
+  //FlejeEprom.fleje = fleje;
 }
