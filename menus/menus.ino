@@ -25,6 +25,10 @@ int freeMemory() {
     
 #define COUNT(x) sizeof(x)/sizeof(*x) // Macro para contar el numero de elementos de un array
 
+
+#define startFirstTime 0  //SE usa para configurar la EEprom por primera vfez o cuando se desconfigura
+
+
 unsigned long currentTimeMillis = 0;
 unsigned long previosTimeMillis = 0;
 
@@ -82,6 +86,13 @@ byte fleje[6][2]={
         {5 ,45}      
     };
 
+
+//Vars de proceso menu
+int presionado = 0;
+short desplazamiento = 1; 
+boolean startProcess = 0;
+byte index = 0;
+
 /***************************************
 Funciones
 ****************************************/
@@ -91,7 +102,9 @@ void Encoder ();
 int deCmAPulsos (int Cm);
 int dePulsosACm (int Pulsos);
 boolean inOrden();
-void putEprom(byte fleje[6][2], int direction);
+//void putEprom(byte fleje[6][2], int direction);
+void readEEPROM(short *index);
+void updateEEPROM(short *index);
 /***************************************
 Encoder
 ****************************************/
@@ -320,7 +333,8 @@ struct PantallaSecundaria
         //Lo muestro nuevamente para evitar que se quede en blanco despues de haber seleccionado
         show();
         setConfig = true;
-    
+        updateEprom(&desplazamiento, figurado);
+        
     }
 };
 
@@ -397,10 +411,10 @@ struct Fleje {
     byte weight = 0;
     byte fleje[6][2]={
           {0, 45},
-          {0,90},
-          {0,90},
-          {0,90},
-          {0,90},
+          {0, 90},
+          {0, 90},
+          {0, 90},
+          {0, 90},
           {0 ,45}      
       };
 };
@@ -433,6 +447,11 @@ void setup(){
     digitalWrite(pinDoblar_90, HIGH); //para apagarlos de inicio ya que es negado
     digitalWrite(pinRetraer, HIGH); //para apagarlos de inicio ya que es negado
 
+    //Para configurar por primera vez cuando se desconfigura la EEPROM
+    #if startFirstTime
+      putEpromFirstTime();
+    #endif
+
     lcd.print(freeMemory());
     crearPantallaPrincipal();
     lcd.print(" ");
@@ -445,10 +464,7 @@ void setup(){
 
 }
 
-int presionado = 0;
-short desplazamiento = 1; 
-boolean startProcess = 0;
-byte index = 0;
+
 
 void loop() {
 
@@ -478,6 +494,8 @@ void loop() {
         }
         else if(Button == ENTER){
             delay(250);
+            //lee el dato de la eprom  para mostrar
+            readEEPROM(&desplazamiento);
             index = displayMain[desplazamiento+1]->weight;
 
             ///***************
@@ -496,7 +514,9 @@ void loop() {
 
             // 4. Elegir la configuracion
             if (!displaySecond.isEligiendo()){
-                displaySecond.selectPuntoX();  
+                displaySecond.selectPuntoX();
+                
+                  
                 ///***************
                 //Serial.println(*displayMain[0]->_txt);
                 ///***************  
@@ -554,7 +574,7 @@ void loop() {
     
         //limpiar memoria y prepararla para el encoder 
         for(byte i = 0; i < 7; i++) 
-        delete[] displayMain[index];
+          delete[] displayMain[index];
         
         delete[] displayMain;
 
@@ -591,9 +611,9 @@ void loop() {
                         digitalWrite(pinDoblar_45, HIGH);
                     }
                     else{
-                        digitalWrite(11, LOW);
+                        digitalWrite(pinDoblar_90, LOW);
                         delay(500);
-                        digitalWrite(11, HIGH);
+                        digitalWrite(pinDoblar_90, HIGH);
                     }
                     
                     /*
@@ -622,7 +642,9 @@ void loop() {
                 //Toma medidas
                 int Medida = 0;
                 
-                Medida = fleje[5][1];
+
+                //Le quito la distancia entre la cizalla y el pivot (23) y lo traslado a pulsos para retraer
+                Medida = 23 - fleje[5][1];
                 Serial.println(deCmAPulsos(Medida));
                 Medida = deCmAPulsos(Medida);
                 
@@ -751,7 +773,72 @@ int dePulsosACm (int Pulsos){
   return Resultado;
 }
 
-void putEprom(byte fleje[6][2], int direction){
-  Fleje FlejeEprom;
-  //FlejeEprom.fleje = fleje;
+
+
+void updateEprom(short *index, byte figurado[6][2]){
+    byte eeadress = 0;
+    eeadress =  sizeof(Fleje) * (*index);
+
+    Fleje Figurado;
+    //Asignacion de pesos
+    Figurado.weight = *index;
+    //ingresar los datos del fleje y ponerlos en 
+    //el la eprom segun la posicion indicada
+    for(byte i = 0; i < 6; i++){
+      Figurado.fleje[i][0] = figurado[i][0] ;
+      Figurado.fleje[i][1] = figurado[i][1];
+    }
+
+    //Actualice la eprom en la posicion indicada
+    EEPROM.put(eeadress, Figurado);
+
 }
+
+void readEEPROM(short *index){
+    byte eeadress = 0;
+    eeadress =  sizeof(Fleje) * (*index);
+
+    Fleje Figurado;
+    EEPROM.get(eeadress, Figurado);
+    
+    //Sacar los datos del fleje y ponerlos en 
+    //el la variable global de fleje
+    for(byte i = 0; i < 6; i++){
+      fleje[i][0] = Figurado.fleje[i][0];
+      fleje[i][1] = Figurado.fleje[i][1];
+    }
+}
+
+
+#if startFirstTime
+  void putEpromFirstTime(){
+      Fleje Figurado1, Figurado2, Figurado3, Figurado4, Figurado5, Figurado6; 
+      byte eeadresS = 0;
+
+      //Asignacion de pesos
+      Figurado1.weight = 0;
+      Figurado2.weight = 1;
+      Figurado3.weight = 2;
+      Figurado4.weight = 3;
+      Figurado5.weight = 5;
+      Figurado6.weight = 6;
+
+      EEPROM.put(eeadresS, Figurado1);
+      eeadresS += sizeof(Fleje);
+
+      EEPROM.put(eeadresS, Figurado2);
+      eeadresS += sizeof(Fleje);
+
+      EEPROM.put(eeadresS, Figurado3);
+      eeadresS += sizeof(Fleje);
+
+      EEPROM.put(eeadresS, Figurado4);
+      eeadresS += sizeof(Fleje);
+
+      EEPROM.put(eeadresS, Figurado5);
+      eeadresS += sizeof(Fleje);
+
+      EEPROM.put(eeadresS, Figurado6);
+      eeadresS += sizeof(Fleje);
+}
+#endif
