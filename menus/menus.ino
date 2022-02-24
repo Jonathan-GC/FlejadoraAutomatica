@@ -1,4 +1,5 @@
 #include <EEPROM.h>
+#include <avr/wdt.h> // Incluir la librería que contiene el watchdog (wdt.h)
 
 /***************************************
     MACROS, CONSTANTES, ENUMERADORES, ESTRUCTURAS Y VARIABLES GLOBALES
@@ -462,6 +463,9 @@ void setup(){
     lcd.setCursor(1, 1);
     lcd.print("reinicio");
 
+    wdt_disable();// Desactivar el watchdog mientras se configura, para que no se resetee
+   //wdt_enable(WDTO_4S);
+
 }
 
 
@@ -644,12 +648,13 @@ void loop() {
                 
 
                 //Le quito la distancia entre la cizalla y el pivot (23) y lo traslado a pulsos para retraer
-                Medida = 23 - fleje[5][1];
+                Medida = 23 - fleje[5][0];
                 Serial.println(deCmAPulsos(Medida));
                 Medida = deCmAPulsos(Medida);
                 
                 digitalWrite(pinRetraer, LOW);
                 //Alimente mientras este lleno
+
 
                 while(value < Medida){
                     Encoder();
@@ -657,8 +662,25 @@ void loop() {
 
                 digitalWrite(pinRetraer, HIGH);
                 value = 0;
+                
 
-            //while(1);
+                //Avanzar hasta el punto de inicio
+                //Pausa para que no avance tan rapido  delay(1000);
+                delay(1200);
+                Medida=23;
+                Medida = deCmAPulsos(Medida);
+                    
+                // 1.-------------------------------------------
+                digitalWrite(pinAlimentar, LOW);
+                
+                //Alimente mientras este lleno
+                while(value < Medida){
+                    Encoder();
+                }
+                digitalWrite(pinAlimentar, HIGH);
+                value = 0;
+                
+                while(1);
                 
             }
 
