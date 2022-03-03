@@ -599,6 +599,7 @@ void loop() {
                     Medida = deCmAPulsos(Medida);
                     
                     // 1.-------------------------------------------
+                    delay(500);
                     digitalWrite(pinAlimentar, LOW);
                     //Alimente mientras este lleno
                     while(value < Medida){
@@ -652,6 +653,7 @@ void loop() {
                 Serial.println(deCmAPulsos(Medida));
                 Medida = deCmAPulsos(Medida);
                 
+                delay(500);
                 digitalWrite(pinRetraer, LOW);
                 //Alimente mientras este lleno
 

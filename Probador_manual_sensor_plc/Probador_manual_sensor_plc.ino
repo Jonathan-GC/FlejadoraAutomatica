@@ -45,7 +45,7 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 unsigned int cont_inicios = 0;
 void setup() {
-   Serial.begin(9600);
+   Serial.begin(115200);
    lcd.begin(16, 2);
    
    cont_inicios = EEPROM.read(0);
