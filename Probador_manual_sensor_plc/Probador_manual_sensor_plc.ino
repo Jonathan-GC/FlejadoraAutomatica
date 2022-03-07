@@ -2,7 +2,12 @@
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
 
-#define ConstanteDeConversion 16 //12.8 // con velocida de 26 en Driver Variador
+//Por defecto al no poder definir un pid apropiado debido al hardware empleado se encontraron las siguientes calibraciones
+//Para medidas pequeñas contante de conversion 10 y medidas grandes 12 con velocidad en el variador de 40 hz
+// si se cambia el variador probablemente estas medidas pueden cambiar
+#define ConstanteDeConversion1 9 //12.8 // con velocida de 40 en Driver Variador
+#define ConstanteDeConversion2 12 //12.8 // con velocida de 40 en Driver Variador
+
 #define ConstanteDeConversionPulsos 0.0612612
 
 #define channelPinA  2
@@ -43,11 +48,12 @@ int presionado = 0; //Ayuda para filtro de entrada a proceso
 //int Fleje1 [6] = {29,10,10,10,10,5};
 byte fleje[6][2]={
         {5, 45},
+        {8, 90},  
         {10,90},
-        {15,90},
+        {18,90},
         {20,90},
-        {25,90},
-        {30 ,45}      
+        {25,90}
+            
     };
 
 
@@ -103,6 +109,7 @@ void setup() {
 //   delay(3000);
 }
 
+int opcion = 0;
 char dato = 0;
 int index = 0;
 void loop(){
@@ -119,155 +126,6 @@ void loop(){
   }
 
   switch(dato){
-    case 'b':
-      for (int i = 0 ; i < EEPROM.length() ; i++) {
-        EEPROM.write(i, 0);
-      }
-
-       cont_inicios = EEPROM.read(0);
-       
-      Serial.print("Re-Inicios\t");
-      Serial.print(cont_inicios, DEC);
-      Serial.println();
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print("Re-Inicios ");
-      lcd.print(cont_inicios, DEC);
-
-      break;
-
-    case '0':
-
-      index=0;
-      break;
-    
-    case '1':
-
-      index=1;
-      break;
-    
-    case '2':
-
-      index=2;
-      break;
-
-    case '3':
-
-      index=3;
-      break;
-
-    case '4':
-
-      index=4;
-      break;
-    
-    case '5':
-
-      index=5;
-      break;
-      
-    case 'v':
-        digitalWrite(A4, 0);
-        delay(300);
-        digitalWrite(A4, 1);
-        
-      break;
-
-    case '9':
-        digitalWrite(11, 0);
-        delay(300);
-        digitalWrite(11, 1);
-      break;
-      
-    case 'y':
-      int Medida1 = 0;
-      Medida1 = fleje[index][0];
-
-      Serial.println(deCmAPulsos(Medida1));
-      Medida1 = deCmAPulsos(Medida1);
-      digitalWrite(pinAlimentar, LOW);
-      
-      //Alimente mientras este lleno
-      while(value < Medida1){
-          Encoder();
-      }
-      digitalWrite(pinAlimentar, HIGH);
-      value = 0;
-
-      break;
-
-    
-    
-    /*
-      case 'c':
-        int Medida = 0;
-        Medida = fleje[0][0];
-
-        Serial.println(deCmAPulsos(Medida));
-        Medida = deCmAPulsos(Medida);
-        digitalWrite(pinAlimentar, LOW);
-        
-        //Alimente mientras este lleno
-        while(value < Medida){
-            Encoder();
-        }
-        digitalWrite(pinAlimentar, HIGH);
-        value = 0;
-
-      break;
-      
-      case 't':
-        int Medida2 = 0;
-        Medida2 = fleje[0][0];
-
-        Serial.println(deCmAPulsos(Medida2));
-        Medida2 = deCmAPulsos(Medida2);
-        digitalWrite(pinRetraer, LOW);
-
-        //Alimente mientras este lleno
-        while(value < Medida2){
-            Encoder();
-        }
-        digitalWrite(pinRetraer, HIGH);
-        value = 0;
-
-      break;
-
-      case 'a':
-        digitalWrite(A5, 0);
-        delay(400);
-        digitalWrite(A5, 1);
-      break;
-
-      case 's':
-        digitalWrite(A5, 0);
-        delay(300);
-        digitalWrite(A5, 1);
-      break;
-
-      case '4':
-        digitalWrite(A4, 0);
-        delay(300);
-        digitalWrite(A4, 1);
-        
-      break;
-
-      case '9':
-        digitalWrite(11, 0);
-        delay(300);
-        digitalWrite(11, 1);
-      break;
-
-      case 'r':
-        digitalWrite(12, 0);
-        delay(500);
-        digitalWrite(12, 1);
-      break;
-
-      case 'e':
-        Encoder();
-        break;
-
       case 'b':
         for (int i = 0 ; i < EEPROM.length() ; i++) {
           EEPROM.write(i, 0);
@@ -282,11 +140,55 @@ void loop(){
         lcd.setCursor(0,0);
         lcd.print("Re-Inicios ");
         lcd.print(cont_inicios, DEC);
+
         break;
 
+      case '0':
+
+        index=0;
+        break;
+      
+      case '1':
+
+        index=1;
+        break;
+      
+      case '2':
+
+        index=2;
+        break;
+
+      case '3':
+
+        index=3;
+        break;
+
+      case '4':
+
+        index=4;
+        break;
+      
+      case '5':
+
+        index=5;
+        break;
+        
+      case 'v':
+          digitalWrite(A4, 0);
+          delay(300);
+          digitalWrite(A4, 1);
+          
+        break;
+
+      case '9':
+          digitalWrite(11, 0);
+          delay(300);
+          digitalWrite(11, 1);
+        break;
+        
       case 'y':
         int Medida1 = 0;
-        Medida1 = fleje[0][0];
+        Medida1 = fleje[index][0];
 
         Serial.println(deCmAPulsos(Medida1));
         Medida1 = deCmAPulsos(Medida1);
@@ -299,77 +201,187 @@ void loop(){
         digitalWrite(pinAlimentar, HIGH);
         value = 0;
 
-      break;
+        break;
 
-      case 'u':
-        int Medida4 = 0;
-        Medida4 = fleje[1][0];
+      
+      
+      /*
+        case 'c':
+          int Medida = 0;
+          Medida = fleje[0][0];
 
-        Serial.println(deCmAPulsos(Medida4));
-        Medida4 = deCmAPulsos(Medida4);
-        digitalWrite(pinAlimentar, LOW);
+          Serial.println(deCmAPulsos(Medida));
+          Medida = deCmAPulsos(Medida);
+          digitalWrite(pinAlimentar, LOW);
+          
+          //Alimente mientras este lleno
+          while(value < Medida){
+              Encoder();
+          }
+          digitalWrite(pinAlimentar, HIGH);
+          value = 0;
+
+        break;
         
-        //Alimente mientras este lleno
-        while(value < Medida4){
-            Encoder();
-        }
-        digitalWrite(pinAlimentar, HIGH);
-        value = 0;
+        case 't':
+          int Medida2 = 0;
+          Medida2 = fleje[0][0];
 
-      break;
+          Serial.println(deCmAPulsos(Medida2));
+          Medida2 = deCmAPulsos(Medida2);
+          digitalWrite(pinRetraer, LOW);
 
-      case 'i':
-        int Medida5 = 0;
-        Medida5 = fleje[2][0];
+          //Alimente mientras este lleno
+          while(value < Medida2){
+              Encoder();
+          }
+          digitalWrite(pinRetraer, HIGH);
+          value = 0;
 
-        Serial.println(deCmAPulsos(Medida5));
-        Medida5 = deCmAPulsos(Medida5);
-        digitalWrite(pinAlimentar, LOW);
-        
-        //Alimente mientras este lleno
-        while(value < Medida5){
-            Encoder();
-        }
-        digitalWrite(pinAlimentar, HIGH);
-        value = 0;
+        break;
 
-      break;
+        case 'a':
+          digitalWrite(A5, 0);
+          delay(400);
+          digitalWrite(A5, 1);
+        break;
 
-      case 'o':
-        int Medida6 = 0;
-        Medida6 = fleje[3][0];
+        case 's':
+          digitalWrite(A5, 0);
+          delay(300);
+          digitalWrite(A5, 1);
+        break;
 
-        Serial.println(deCmAPulsos(Medida6));
-        Medida6 = deCmAPulsos(Medida6);
-        digitalWrite(pinAlimentar, LOW);
-        
-        //Alimente mientras este lleno
-        while(value < Medida6){
-            Encoder();
-        }
-        digitalWrite(pinAlimentar, HIGH);
-        value = 0;
+        case '4':
+          digitalWrite(A4, 0);
+          delay(300);
+          digitalWrite(A4, 1);
+          
+        break;
 
-      break;
+        case '9':
+          digitalWrite(11, 0);
+          delay(300);
+          digitalWrite(11, 1);
+        break;
 
-      case 'p':
-        int Medida7 = 0;
-        Medida7 = fleje[4][0];
+        case 'r':
+          digitalWrite(12, 0);
+          delay(500);
+          digitalWrite(12, 1);
+        break;
 
-        Serial.println(deCmAPulsos(Medida7));
-        Medida7 = deCmAPulsos(Medida7);
-        digitalWrite(pinAlimentar, LOW);
-        
-        //Alimente mientras este lleno
-        while(value < Medida7){
-            Encoder();
-        }
-        digitalWrite(pinAlimentar, HIGH);
-        value = 0;
+        case 'e':
+          Encoder();
+          break;
 
-      break;
-    */
+        case 'b':
+          for (int i = 0 ; i < EEPROM.length() ; i++) {
+            EEPROM.write(i, 0);
+          }
+
+          cont_inicios = EEPROM.read(0);
+          
+          Serial.print("Re-Inicios\t");
+          Serial.print(cont_inicios, DEC);
+          Serial.println();
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("Re-Inicios ");
+          lcd.print(cont_inicios, DEC);
+          break;
+
+        case 'y':
+          int Medida1 = 0;
+          Medida1 = fleje[0][0];
+
+          Serial.println(deCmAPulsos(Medida1));
+          Medida1 = deCmAPulsos(Medida1);
+          digitalWrite(pinAlimentar, LOW);
+          
+          //Alimente mientras este lleno
+          while(value < Medida1){
+              Encoder();
+          }
+          digitalWrite(pinAlimentar, HIGH);
+          value = 0;
+
+        break;
+
+        case 'u':
+          int Medida4 = 0;
+          Medida4 = fleje[1][0];
+
+          Serial.println(deCmAPulsos(Medida4));
+          Medida4 = deCmAPulsos(Medida4);
+          digitalWrite(pinAlimentar, LOW);
+          
+          //Alimente mientras este lleno
+          while(value < Medida4){
+              Encoder();
+          }
+          digitalWrite(pinAlimentar, HIGH);
+          value = 0;
+
+        break;
+
+        case 'i':
+          int Medida5 = 0;
+          Medida5 = fleje[2][0];
+
+          Serial.println(deCmAPulsos(Medida5));
+          Medida5 = deCmAPulsos(Medida5);
+          digitalWrite(pinAlimentar, LOW);
+          
+          //Alimente mientras este lleno
+          while(value < Medida5){
+              Encoder();
+          }
+          digitalWrite(pinAlimentar, HIGH);
+          value = 0;
+
+        break;
+
+        case 'o':
+          int Medida6 = 0;
+          Medida6 = fleje[3][0];
+
+          Serial.println(deCmAPulsos(Medida6));
+          Medida6 = deCmAPulsos(Medida6);
+          digitalWrite(pinAlimentar, LOW);
+          
+          //Alimente mientras este lleno
+          while(value < Medida6){
+              Encoder();
+          }
+          digitalWrite(pinAlimentar, HIGH);
+          value = 0;
+
+        break;
+
+        case 'p':
+          int Medida7 = 0;
+          Medida7 = fleje[4][0];
+
+          Serial.println(deCmAPulsos(Medida7));
+          Medida7 = deCmAPulsos(Medida7);
+          digitalWrite(pinAlimentar, LOW);
+          
+          //Alimente mientras este lleno
+          while(value < Medida7){
+              Encoder();
+          }
+          digitalWrite(pinAlimentar, HIGH);
+          value = 0;
+
+        break;
+      */
+    
+    
+
+      
   }
+
   
   
 }
@@ -426,7 +438,7 @@ void Encoder (){
 }
 int deCmAPulsos (int Cm){
   int Resultado;
-  Resultado = Cm*ConstanteDeConversion;
+  Cm < 10?Resultado = Cm*ConstanteDeConversion1:Resultado = Cm*ConstanteDeConversion2;
   return Resultado;
 }
 int dePulsosACm (int Pulsos){

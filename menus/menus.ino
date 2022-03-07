@@ -83,8 +83,8 @@ byte fleje[6][2]={
         {10,90},
         {10,90},
         {10,90},
-        {10,90},
-        {5 ,45}      
+        {10,45},
+        {5 ,90}      
     };
 
 
@@ -110,7 +110,12 @@ void updateEEPROM(short *index);
 Encoder
 ****************************************/
 
-#define ConstanteDeConversion 10 // con velocida de 26 en Driver Variador
+//Por defecto al no poder definir un pid apropiado debido al hardware empleado se encontraron las siguientes calibraciones
+//Para medidas pequeñas contante de conversion 10 y medidas grandes 12 con velocidad en el variador de 40 hz
+// si se cambia el variador probablemente estas medidas pueden cambiar
+#define ConstanteDeConversion1 9 //10 //con velocida de 40 en Driver Variador
+#define ConstanteDeConversion2 12 //12.8 // con velocida de 40 en Driver Variador
+
 #define ConstanteDeConversionPulsos 0,0612612
 
 #define channelPinA  2
@@ -591,6 +596,7 @@ void loop() {
             Serial.print("memoria: "); Serial.println(freeMemory());
             if(inOrden()){
                 for(int i = 0; i < 5; i++){
+            
                     Serial.print("Giro: ");Serial.println(i+1);
                     //Toma medidas
                     int Medida = 0;
@@ -599,7 +605,7 @@ void loop() {
                     Medida = deCmAPulsos(Medida);
                     
                     // 1.-------------------------------------------
-                    delay(500);
+                    delay(600);
                     digitalWrite(pinAlimentar, LOW);
                     //Alimente mientras este lleno
                     while(value < Medida){
@@ -634,6 +640,8 @@ void loop() {
                     digitalWrite(11, HIGH);
                     }
                     */
+                    
+                    delay(1000);                    
                     while(!inOrden());
                     
                     //Esperar al que el plc de la orden de 
@@ -649,7 +657,7 @@ void loop() {
                 
 
                 //Le quito la distancia entre la cizalla y el pivot (23) y lo traslado a pulsos para retraer
-                Medida = 23 - fleje[5][0];
+                Medida = 25 - fleje[5][0];
                 Serial.println(deCmAPulsos(Medida));
                 Medida = deCmAPulsos(Medida);
                 
@@ -669,7 +677,7 @@ void loop() {
                 //Avanzar hasta el punto de inicio
                 //Pausa para que no avance tan rapido  delay(1000);
                 delay(1200);
-                Medida=23;
+                Medida=25;
                 Medida = deCmAPulsos(Medida);
                     
                 // 1.-------------------------------------------
@@ -682,7 +690,8 @@ void loop() {
                 digitalWrite(pinAlimentar, HIGH);
                 value = 0;
                 
-                while(1);
+                delay(1000);
+                //while(1);
                 
             }
 
@@ -788,9 +797,10 @@ void Encoder (){
 }
 int deCmAPulsos (int Cm){
   int Resultado;
-  Resultado = Cm*ConstanteDeConversion;
+  Cm < 10?Resultado = Cm*ConstanteDeConversion1:Resultado = Cm*ConstanteDeConversion2;
   return Resultado;
 }
+
 int dePulsosACm (int Pulsos){
   int Resultado;
   Resultado = Pulsos*ConstanteDeConversionPulsos;
