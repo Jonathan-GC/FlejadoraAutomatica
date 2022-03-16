@@ -594,7 +594,7 @@ void loop() {
         //delete[] displayTerciario;
         while(1){
             Serial.print("memoria: "); Serial.println(freeMemory());
-            if(inOrden()){
+            if(digitalRead(pinPLCSignal) == 1){
                 for(int i = 0; i < 5; i++){
             
                     Serial.print("Giro: ");Serial.println(i+1);
