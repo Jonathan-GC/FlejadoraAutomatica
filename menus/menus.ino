@@ -660,8 +660,14 @@ void loop() {
                 Medida = 25 - fleje[5][0];
                 Serial.println(deCmAPulsos(Medida));
                 Medida = deCmAPulsos(Medida);
+
+                //alimenta un poquito
                 
-                delay(500);
+                digitalWrite(pinAlimentar, LOW);
+                delay(100);
+                digitalWrite(pinAlimentar, HIGH);
+                delay(20);
+                
                 digitalWrite(pinRetraer, LOW);
                 //Alimente mientras este lleno
 
@@ -690,7 +696,7 @@ void loop() {
                 digitalWrite(pinAlimentar, HIGH);
                 value = 0;
                 
-                delay(1000);
+                //delay(1000);
                 //while(1);
                 
             }
