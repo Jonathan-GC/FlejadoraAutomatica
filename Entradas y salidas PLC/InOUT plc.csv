@@ -6,7 +6,7 @@ I4,SALIDA CARRO
 I5,Sensor de Angulo
 I6,PIN A2 arduino Alimentar
 I7,PIN A3  arduino 45°
-I8,PIN 11 arduino 90°
+I8,PIN 13 arduino 90°
 I9,Pedal
 I10,Home
 I11,PIN 12 Arduino Retraer varilla
