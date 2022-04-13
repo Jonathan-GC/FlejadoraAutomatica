@@ -12,13 +12,13 @@
  * the gain values with the help of trial and error methods.
 */ 
 #define __Kp 8.8 // Proportional constant
-#define __Ki 0.25 // Integral Constant
+#define __Ki 0.3 // Integral Constant
 #define __Kd 1.45 // Derivative Constant
 
 volatile long int encoder_count = 0; // stores the current encoder count
 unsigned int integerValue = 0; // stores the incoming serial value. Max value is 65535
 char incomingByte; // parses and stores each character one by one
-int motor_pwm_value = 10; // after PID computation data is stored in this variable.
+int motor_pwm_value = 0; // after PID computation data is stored in this variable.
 
 PIDController pidcontroller;
 
@@ -27,8 +27,9 @@ void setup(){
   pinMode(channelPinA, INPUT_PULLUP);
   pinMode(channelPinB, INPUT_PULLUP);
   pinMode(pinAlimentar, OUTPUT);
-  pinMode(pinRetraer, OUTPUT);  
-
+  pinMode(pinRetraer, OUTPUT); 
+  
+    
   attachInterrupt(digitalPinToInterrupt(channelPinA), encoder, RISING);
   pidcontroller.begin(); // initialize the PID instance
   pidcontroller.tune(__Kp , __Ki , __Kd); // Tune the PID, arguments: kP, kI, kD
@@ -52,7 +53,7 @@ void loop(){
   Serial.print(motor_pwm_value); // print the calculated value for debugging
   Serial.print("   ");
  
-  if (motor_pwm_value > 8) // if the motor_pwm_value is greater than zero we rotate the  motor in clockwise direction
+  if (motor_pwm_value > 2) // if the motor_pwm_value is greater than zero we rotate the  motor in clockwise direction
     motor_ccw(motor_pwm_value);
   else // else we move it in a counter clockwise direction
     motor_cw(abs(motor_pwm_value));
@@ -62,7 +63,7 @@ void loop(){
 }
 
 void motor_cw(int power) {
-  if (power > 8) {
+  if (power > 2) {
     analogWrite(frecuenciaPWM, power);
     digitalWrite(pinAlimentar, LOW);
     
@@ -76,7 +77,7 @@ void motor_cw(int power) {
 }
 
 void motor_ccw(int power) {
-  if (power > 1) {
+  if (power > 2) {
     analogWrite(frecuenciaPWM, power);
     digitalWrite(pinRetraer, LOW);
     
