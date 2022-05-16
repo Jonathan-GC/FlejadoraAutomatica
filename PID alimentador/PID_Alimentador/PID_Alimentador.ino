@@ -14,7 +14,7 @@
  * proportional, integral, and derivative controller I have set
  * the gain values with the help of trial and error methods.
 */ 
-#define __Kp 5//8.8 // Proportional constant
+#define __Kp 4//8.8 // Proportional constant
 #define __Ki 0.001//0.3 // Integral Constant
 #define __Kd 0//1.45 // Derivative Constant
 #define  umbralDesAccionamiento 10
