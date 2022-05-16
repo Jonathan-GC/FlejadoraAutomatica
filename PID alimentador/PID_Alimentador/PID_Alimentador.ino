@@ -1,19 +1,23 @@
 #include <PIDController.h>
 
-#define channelPinA 2
-#define channelPinB 3
+#define channelPinA 3
+#define channelPinB 2
 
 #define pinAlimentar A5 // Pin I8 PLC para giro 90°
 #define pinRetraer   12 // pin interfaz LCD
 #define frecuenciaPWM 11
 
+#define ConstanteDeConversion1 16.63 //10 //con velocida de 40 en Driver Variador
+#define ConstanteDeConversion2 16.63 //12.8 // con velocida de 40 en Driver Variador
+
 /*In this section we have defined the gain values for the 
  * proportional, integral, and derivative controller I have set
  * the gain values with the help of trial and error methods.
 */ 
-#define __Kp 8.8 // Proportional constant
-#define __Ki 0.3 // Integral Constant
-#define __Kd 1.45 // Derivative Constant
+#define __Kp 5//8.8 // Proportional constant
+#define __Ki 0.001//0.3 // Integral Constant
+#define __Kd 0//1.45 // Derivative Constant
+#define  umbralDesAccionamiento 10
 
 volatile long int encoder_count = 0; // stores the current encoder count
 unsigned int integerValue = 0; // stores the incoming serial value. Max value is 65535
@@ -38,12 +42,14 @@ void setup(){
 }
 
 
+
 void loop(){
   while (Serial.available() > 0) {
     integerValue = Serial.parseInt(); // stores the integerValue
     incomingByte = Serial.read(); // stores the /n character
     if (incomingByte == '\n'){ // if we receive a newline character we will continue in the loop
-      integerValue = map(integerValue, 0, 360, 0, 1000);
+      //integerValue = map(integerValue, 0, 360, 0, 1000);
+      integerValue=deCmAPulsos(integerValue);
       continue;
     }
   }
@@ -53,7 +59,7 @@ void loop(){
   Serial.print(motor_pwm_value); // print the calculated value for debugging
   Serial.print("   ");
  
-  if (motor_pwm_value > 2) // if the motor_pwm_value is greater than zero we rotate the  motor in clockwise direction
+  if (motor_pwm_value > umbralDesAccionamiento) // if the motor_pwm_value is greater than zero we rotate the  motor in clockwise direction
     motor_ccw(motor_pwm_value);
   else // else we move it in a counter clockwise direction
     motor_cw(abs(motor_pwm_value));
@@ -62,8 +68,9 @@ void loop(){
   
 }
 
-void motor_cw(int power) {
-  if (power > 2) {
+
+void motor_ccw(int power) {
+  if (power > umbralDesAccionamiento) {
     analogWrite(frecuenciaPWM, power);
     digitalWrite(pinAlimentar, LOW);
     
@@ -76,8 +83,8 @@ void motor_cw(int power) {
   }
 }
 
-void motor_ccw(int power) {
-  if (power > 2) {
+void motor_cw(int power) {
+  if (power > umbralDesAccionamiento) {
     analogWrite(frecuenciaPWM, power);
     digitalWrite(pinRetraer, LOW);
     
@@ -95,4 +102,13 @@ void encoder() {
     encoder_count++; // increment the count
   else // else decrease the count
     encoder_count--;  // decrement the count
+}
+
+int deCmAPulsos (int Cm){
+  int Resultado;
+  Cm < 10?Resultado = Cm*ConstanteDeConversion1:Resultado = Cm*ConstanteDeConversion2;
+
+  Serial.println(Resultado);
+  delay(3000);
+  return Resultado;
 }
