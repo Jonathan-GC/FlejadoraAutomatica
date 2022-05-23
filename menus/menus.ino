@@ -41,9 +41,11 @@ CONTROLADOR DE ALIMENTACION
 */ 
 #include <PIDController.h>
 
-#define __Kp 260//8.8 // Proportional constant   260
-#define __Ki 2.7//0.25 // Integral Constant      2.7
-#define __Kd 2000//1.45 // Derivative Constant    2000
+#define __Kp 2//8.8 // Proportional constant   260
+#define __Ki 0.001 //0.25//0.25 // Integral Constant      2.7
+#define __Kd 0//1.45 // Derivative Constant    2000
+#define errorOffSet 8  //Para sacarlo del punto de calculo
+#define umbralDesAccionamiento 10
 
 volatile long int encoder_count = 0; // stores the current encoder count
 long integerValue = 0;
@@ -80,7 +82,6 @@ Pines necesarios para el funcionamiento del hardware
 #define pinDoblar_90 13 // Pin I8 PLC para giro 90°
 #define pinTeclado   A0 // pin interfaz LCD
 #define frecuenciaPWM 11
-
 /***************************************
 Variables de lista de flejes
 ****************************************/
@@ -92,6 +93,7 @@ Variables de lista de flejes
               1 5  4
 */
 # define valueVerticesXFleje  5
+# define distanciaPuntoDeDoblez 25
 
 String MenuFlejes[] = {"", "Fleje 10x15", "Fleje10x10", "Fleje 18x15", "Fleje 8x20", "Fleje 30x30", "Fleje 8x8"};
 
@@ -110,7 +112,7 @@ byte fleje[6][2]={
 //Vars de proceso menu
 int presionado = 0;
 short desplazamiento = 1; 
-boolean startProcess = 1;
+boolean startProcess = 0;
 byte index = 0;
 
 /***************************************
@@ -122,9 +124,13 @@ void Encoder ();
 int deCmAPulsos (int Cm);
 int dePulsosACm (int Pulsos);
 boolean inOrden();
-//void putEprom(byte fleje[6][2], int direction);
+
+void operarPID();
 void readEEPROM(short *index);
 void updateEEPROM(short *index);
+void motor_cw(int power);
+void motor_ccw(int power);
+
 /***************************************
 Encoder
 ****************************************/
@@ -132,8 +138,8 @@ Encoder
 //Por defecto al no poder definir un pid apropiado debido al hardware empleado se encontraron las siguientes calibraciones
 //Para medidas pequeñas contante de conversion 10 y medidas grandes 12 con velocidad en el variador de 40 hz
 // si se cambia el variador probablemente estas medidas pueden cambiar
-#define ConstanteDeConversion1 16.63 //10 //con velocida de 40 en Driver Variador
-#define ConstanteDeConversion2 16.63 //12.8 // con velocida de 40 en Driver Variador
+#define ConstanteDeConversion1 16.63//9 //10 //con velocida de 40 en Driver Variador
+#define ConstanteDeConversion2 16.63//12 //12.8 // con velocida de 40 en Driver Variador
 
 #define ConstanteDeConversionPulsos 0,0612612
 
@@ -467,17 +473,21 @@ void setup(){
     pinMode(pinDoblar_90, OUTPUT); // Pin I8 PLC para giro 90°
     pinMode(pinRetraer, OUTPUT); // Pin I11 PLC para giro retraer
     pinMode(frecuenciaPWM, OUTPUT);
-
+    
+    //Coloco la Frecuencia para operar la maquina con pedal cuando no esta disponible el modo automatico
+    analogWrite(frecuenciaPWM, 255); 
     digitalWrite(pinAlimentar, HIGH); //para apagarlos de inicio ya que es negado
     digitalWrite(pinDoblar_45, HIGH); //para apagarlos de inicio ya que es negado
     digitalWrite(pinDoblar_90, HIGH); //para apagarlos de inicio ya que es negado
-    digitalWrite(pinRetraer, HIGH); //para apagarlos de inicio ya que es negado
+    digitalWrite(pinRetraer,  HIGH); //para apagarlos de inicio ya que es negado
 
     //Establecer Interrupcion por el puerto A o b, este se puede invertir segun como quiera que arranque el motor derecho o izquierdo
-    attachInterrupt(digitalPinToInterrupt(channelPinA), encoder, RISING);
+    attachInterrupt(digitalPinToInterrupt(channelPinA), Encoder, RISING);
+    
     pidcontroller.begin(); // initialize the PID instance
     pidcontroller.tune(__Kp , __Ki , __Kd); // Tune the PID, arguments: kP, kI, kD
     pidcontroller.limit(-255, 255);
+
     
     //Para configurar por primera vez cuando se desconfigura la EEPROM
     #if startFirstTime
@@ -496,14 +506,13 @@ void setup(){
 
     wdt_disable();// Desactivar el watchdog mientras se configura, para que no se resetee
    //wdt_enable(WDTO_4S);
-  
-  //Coloco la Frecuencia para operar la maquina con pedal cuando no esta disponible el modo automatico
-  analogWrite(frecuenciaPWM, 180);
+
 }
 
 
 
 void loop() {
+    
     if(!startProcess){   
         Teclado Button = readButtons();
 
@@ -607,60 +616,53 @@ void loop() {
         delay(100); 
     }
     else if (startProcess) {
-    
-        //limpiar memoria y prepararla para el encoder 
+    //if (startProcess) {
+        //limpiar memoria y prepararla para el encoder  
+        //for(byte i = 0; i < 7; i++) 
+        //  delete[] displayMain[index];
         
-        /*
-        for(byte i = 0; i < 7; i++) 
-          delete[] displayMain[index];
-        
-        delete[] displayMain;
-        */
+        //delete[] displayMain;
 
         //limpiar la memoria de la segunda pantalla
         //delete[] displaySecond;
 
         //limpiar la memoria de la tercera pantalla
         //delete[] displayTerciario;
-
         while(1){
-            //Serial.print("memoria: "); Serial.println(freeMemory());
-            if(inOrden()){
-                
-                
-                
+            Serial.print("memoria: "); Serial.println(freeMemory());
+            if(digitalRead(pinPLCSignal) == 0){
                 for(int i = 0; i < 5; i++){
-                    /****************************************
-                    //Computar las medidas y trasladarlas
-                    // a pulsos, las medidas se capturan 
-                    //del array en memoria Fleje 
-                    *****************************************/
-                    
+                    encoder_count=0;
                     Serial.print("Giro: ");Serial.println(i+1);
-                    
                     //Toma medidas
                     long Medida = 0;
                     Medida = fleje[i][0];
-                    Serial.println(deCmAPulsos(Medida));
+                    
+                    Serial.print(deCmAPulsos(Medida)); Serial.print(F(" Cm "));
                     Medida = deCmAPulsos(Medida);
-                    encoder_count = 0;
+                    pidcontroller.setpoint(Medida);
+                    Serial.print(Medida); Serial.println(F(" Pulsos"));
                     
                     // 1.-------------------------------------------
-                    delay(600);
-
-                    //Pasar valores a la variable del encoder Integer Value
-                    long *pulsos;
-                    pulsos = &integerValue;
-                    *pulsos = Medida;
-                    pidcontroller.setpoint(integerValue);
-                    //Alimente mientras este lleno
-                    while(*pulsos != encoder_count){
+                    do{
+                      analogWrite(frecuenciaPWM, 255);
+                      digitalWrite(pinAlimentar, LOW);
+                      //Alimente mientras este lleno
+                    }while(encoder_count < Medida);
+                    
+                    digitalWrite(pinAlimentar, HIGH);
+                    digitalWrite(pinRetraer, HIGH);
+                    delay(200);
+                    Serial.print(encoder_count); Serial.println(F(" Salio"));
+                     
+                    //Devolverm usando control de precisión PID
+                    while(encoder_count < Medida - errorOffSet || encoder_count > Medida + errorOffSet){
                       operarPID();
                     }
-                    encoder_count = 0;
+                    digitalWrite(pinAlimentar, 1);
+                    digitalWrite(pinRetraer, 1);
                     
-                                       
-
+                    
                     // 2.-------------------------------------------
                     //Eleccion de ángulo
                     if (fleje[i][1] == 45){
@@ -668,78 +670,126 @@ void loop() {
                         delay(500);
                         digitalWrite(pinDoblar_45, HIGH);
                     }
+                    
                     else{
                         digitalWrite(pinDoblar_90, LOW);
                         delay(500);
                         digitalWrite(pinDoblar_90, HIGH);
                     }
-                    
-                    
+                    delay(300);
+                    //Esperar al que el plc de la orden de continuar                   
+                    while(1){
+                      if(inOrden())
+                        break;
+                    }
 
-                    delay(1000);                    
                     
-                    while(!inOrden());
                     
-                    //Esperar al que el plc de la orden de 
-                    //volver a arrancar
-                  
                 }
-
-                               
-                //Reset en el contador encoder0
-                encoder_count = 0;
-                Serial.println(F("Salio del for a corte"));
-                //Toma medidas
-                long Medida = 0;
-                
-
-                //Le quito la distancia entre la cizalla y el pivot (23) y lo traslado a pulsos para retraer
-                Medida = 25 - fleje[5][0];
-                Serial.println(deCmAPulsos(Medida));
-                Medida = deCmAPulsos(Medida);
-
-                //alimenta un poquito
-                
+                /********************************************************
+                //Reset del contador para contar tambien el desfase 
+                //en la salida o permitir la salida del gancho
+                //Sin que se trabe la maquina
+                //alimenta un poquito para retirar
+                encoder_count=0;
+                 
                 analogWrite(frecuenciaPWM, 150);
                 digitalWrite(pinAlimentar, LOW);
                 delay(100);
                 digitalWrite(pinAlimentar, HIGH);
                 analogWrite(frecuenciaPWM, 0);
                 delay(20);
-                encoder_count=0;
-                //Alimente mientras este lleno
-                //Reversa
                 
-                Serial.println("Reversa");
-                long *pulsos;
-                pulsos = &integerValue;
+                //Le coloco virtualmente la distancia que hay desde el punto
+                //de dobles hasta el origen o cizalla de valor 25
+               
+                Serial.println(F("Salio del for a corte"));
                 
-                *pulsos = Medida * -1;
-                Serial.println(*pulsos);
-                pidcontroller.setpoint(integerValue);
-                //Alimente mientras este lleno
-                while(*pulsos != encoder_count){
+                encoder_count += deCmAPulsos(distanciaPuntoDeDoblez);
+
+                //pulsos para retraer
+                long Medida = 0;
+                Medida = deCmAPulsos(fleje[5][0]);
+
+                pidcontroller.setpoint(Medida);
+                
+                while(encoder_count < Medida - errorOffSet || encoder_count > Medida + errorOffSet){
                     operarPID();
                 }
+
+                digitalWrite(pinAlimentar, 1);
+                digitalWrite(pinRetraer, 1);
+
+                while(1);
+                *********************************************************************************/   
                 
+                //Le quito la distancia entre la cizalla y el pivot (23) y lo traslado a pulsos para retraer
+                long Medida = distanciaPuntoDeDoblez - fleje[5][0];
+                Serial.println(deCmAPulsos(Medida));
+                Medida = deCmAPulsos(Medida);
+                
+                
+                encoder_count = Medida;
+                analogWrite(frecuenciaPWM, 200);
+                digitalWrite(pinAlimentar, LOW);
+                delay(100);
+                digitalWrite(pinAlimentar, HIGH);
+                analogWrite(frecuenciaPWM, 0);
+                delay(200);
+                
+                
+                //Alimente mientras este lleno
+                do{
+                      analogWrite(frecuenciaPWM, 255);
+                      digitalWrite(pinRetraer, LOW);
+                      //Alimente mientras este lleno
+                }while(encoder_count > 0);
+
+                digitalWrite(pinRetraer, HIGH);
                 encoder_count = 0;
-                while(!inOrden());
                 
+
                 //Avanzar hasta el punto de inicio
                 //Pausa para que no avance tan rapido  delay(1000);
                 delay(1200);
 
-                Serial.println("Alimentar hasta el punto de inicio");
-                Medida=25;
-                Medida = deCmAPulsos(Medida);
+                
+
+                ///Volver a alimentar
+                encoder_count=0;
                     
-                *pulsos = Medida;
-                Serial.println(*pulsos);
-                pidcontroller.setpoint(integerValue);
-                    //Alimente mientras este lleno
-                while(*pulsos != encoder_count){
-                    operarPID();
+                  
+                //Toma medidas
+                Medida = distanciaPuntoDeDoblez;
+                
+                
+                Serial.print(deCmAPulsos(Medida)); Serial.print(F(" Cm "));
+                Medida = deCmAPulsos(Medida);
+                pidcontroller.setpoint(Medida);
+                Serial.print(Medida); Serial.println(F(" Pulsos"));
+                
+                // 1.-------------------------------------------
+                do{
+                  analogWrite(frecuenciaPWM, 255);
+                  digitalWrite(pinAlimentar, LOW);
+                  //Alimente mientras este lleno
+                }while(encoder_count < Medida);
+                
+                digitalWrite(pinAlimentar, HIGH);
+                digitalWrite(pinRetraer, HIGH);
+                delay(1000);
+                Serial.print(encoder_count); Serial.println(F(" Salio"));
+                 
+                //Devolverm usando control de precisión PID
+                while(encoder_count < Medida - errorOffSet || encoder_count > Medida + errorOffSet){
+                  operarPID();
                 }
+                digitalWrite(pinAlimentar, 1);
+                digitalWrite(pinRetraer, 1);
+
+                //Esperar al que el plc de la orden de continuar
+                delay(1000);
+                
                 
             }
 
@@ -754,17 +804,20 @@ void loop() {
 
 void operarPID(){
   
-  motor_pwm_value = pidcontroller.compute(encoder_count);
+   motor_pwm_value = pidcontroller.compute(encoder_count);
   Serial.print(motor_pwm_value); // print the calculated value for debugging
   Serial.print("   ");
- 
-  if (motor_pwm_value > 2) // if the motor_pwm_value is greater than zero we rotate the  motor in clockwise direction
+  
+  if (motor_pwm_value > umbralDesAccionamiento
+  ) // if the motor_pwm_value is greater than zero we rotate the  motor in clockwise direction
     motor_ccw(motor_pwm_value);
   else // else we move it in a counter clockwise direction
     motor_cw(abs(motor_pwm_value));
   
   Serial.println(encoder_count);  
+  
 }
+
 boolean inOrden(){
   if(digitalRead(pinPLCSignal) == 0){
     delay(300);
@@ -820,8 +873,7 @@ void crearPantallaPrincipal(){
 
     Serial.print("\tPuntero Padre:\t"); Serial.println(long(displayMain));
 }
-void encoder (){
-
+void Encoder (){
   /*
   currentTime = micros();
    if (currentTime >= (loopTime + timeThreshold))
@@ -854,16 +906,16 @@ void encoder (){
 
       loopTime = currentTime;  // Actualizar tiempo
    }
-  */
-  
+   */
+
   if (digitalRead(channelPinB) == HIGH) // if ENCODER_B is high increase the count
     encoder_count++; // increment the count
   else // else decrease the count
     encoder_count--;  // decrement the count 
+   
+ 
 
 }
-
-
 int deCmAPulsos (int Cm){
   int Resultado;
   Cm < 10?Resultado = Cm*ConstanteDeConversion1:Resultado = Cm*ConstanteDeConversion2;
@@ -912,8 +964,8 @@ void readEEPROM(short *index){
     }
 }
 
-void motor_cw(int power) {
-  if (power > 2) {
+void motor_ccw(int power) {
+  if (power > 1) {
     analogWrite(frecuenciaPWM, power);
     digitalWrite(pinAlimentar, LOW);
     
@@ -926,8 +978,8 @@ void motor_cw(int power) {
   }
 }
 
-void motor_ccw(int power) {
-  if (power > 2) {
+void motor_cw(int power) {
+  if (power > 1) {
     analogWrite(frecuenciaPWM, power);
     digitalWrite(pinRetraer, LOW);
     
@@ -939,7 +991,6 @@ void motor_ccw(int power) {
     digitalWrite(pinAlimentar, HIGH);
   }
 }
-
 
 
 #if startFirstTime
