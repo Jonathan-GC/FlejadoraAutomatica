@@ -41,7 +41,7 @@ CONTROLADOR DE ALIMENTACION
 */ 
 #include <PIDController.h>
 
-#define __Kp 10//8.8 // Proportional constant   260
+#define __Kp 8//10//8.8 // Proportional constant   260
 #define __Ki 0.1 //0.25//0.25 // Integral Constant      2.7
 #define __Kd 0//1.45 // Derivative Constant    2000
 #define errorOffSet 1  //Para sacarlo del punto de calculo
@@ -130,7 +130,7 @@ void readEEPROM(short *index);
 void updateEEPROM(short *index);
 void motor_cw(int power);
 void motor_ccw(int power);
-
+void avanzarEnCm(byte *MedidaDelDoblez); 
 /***************************************
 Encoder
 ****************************************/
@@ -623,7 +623,7 @@ void loop() {
         
         //delete[] displayMain;
 
-        //limpiar la memoria de la segunda pantalla
+        //limpiar la memori a de la segunda pantalla
         //delete[] displaySecond;
 
         //limpiar la memoria de la tercera pantalla
@@ -632,38 +632,11 @@ void loop() {
             Serial.print("memoria: "); Serial.println(freeMemory());
             if(digitalRead(pinPLCSignal) == 0){
                 for (byte i = 0; i < 5; i++){
-                    encoder_count=0;
-                    Serial.print("Giro: ");Serial.println(i+1);
-                    //Toma medidas
-                    long Medida = 0;
-                    Medida = fleje[i][0];
+
+                     Serial.print("Giro: ");Serial.println(i+1);
+                    //Avanzar segun centimetros
+                    avanzarEnCm(&fleje[i][0]);
                     
-                    Serial.print(deCmAPulsos(Medida)); Serial.print(F(" Cm "));
-                    Medida = deCmAPulsos(Medida);
-                    pidcontroller.setpoint(Medida);
-                    Serial.print(Medida); Serial.println(F(" Pulsos"));
-//                    // 1.-------------------------------------------
-//                    do{
-//                      analogWrite(frecuenciaPWM, 255);
-//                      digitalWrite(pinAlimentar, LOW);
-//                      //Alimente mientras este lleno
-//                    }while(encoder_count < Medida);
-//                    
-//                    digitalWrite(pinAlimentar, HIGH);
-//                    digitalWrite(pinRetraer, HIGH);
-//
-//                    delay(100);
-//                    Serial.print(encoder_count); Serial.println(F(" Salio"));
-//                     
-                    //Devolverm usando control de precisión PID
-                    while(encoder_count < Medida - errorOffSet || encoder_count > Medida + errorOffSet){
-                      operarPID();
-                    }
-                    
-                    digitalWrite(pinAlimentar, 1);
-                    digitalWrite(pinRetraer, 1);
-                    
-                    /*
                     // 2.-------------------------------------------
                     //Eleccion de ángulo
                     if (fleje[i][1] == 45){
@@ -678,14 +651,56 @@ void loop() {
                         digitalWrite(pinDoblar_90, HIGH);
                     }
                     delay(300);
+
+
+                    
                     //Esperar al que el plc de la orden de continuar                   
-                    while(1){
+                    while(1){ 
                       if(inOrden())
                         break;
                     }
-                    */
+
+                    
                     
                 }
+                
+                //Reset del contador para contar tambien el desfase 
+                //en la salida o permitir la salida del gancho
+                //Sin que se trabe la maquina
+                //alimenta un poquito para retirar
+                encoder_count=0;
+                
+                //Le coloco virtualmente la distancia que hay desde el punto
+                //de dobles hasta el origen o cizalla de valor 25
+               
+                Serial.println(F("Salio del for a corte"));
+                
+                encoder_count += deCmAPulsos(distanciaPuntoDeDoblez);
+                long bandera = encoder_count;
+                //pulsos para retraer
+                long Medida = 0;
+                Medida = deCmAPulsos(fleje[5][0]+3);
+                
+                do{ 
+                  analogWrite(frecuenciaPWM, 255);
+                  digitalWrite(pinRetraer, LOW);
+                  //Alimente mientras este lleno
+                }while(encoder_count > Medida);
+
+                digitalWrite(pinAlimentar, 0);
+                digitalWrite(pinRetraer, 1);
+                delay(50);
+                digitalWrite(pinAlimentar, 1);
+                digitalWrite(pinRetraer, 1);
+                
+                delay(5000);
+                Serial.print(encoder_count); Serial.print("\t"); Serial.print(Medida); Serial.print("\t"); Serial.println(bandera);
+                //while(1);
+
+                //Avanzar al Punto de dobles nuevamente y esperar el arranque
+                byte flag = distanciaPuntoDeDoblez+8; 
+                avanzarEnCm(&flag);
+                delay(1000);
                 while(1);
             
             }
@@ -694,9 +709,42 @@ void loop() {
     
             
 
-        
+          
     }   
 
+}
+
+void avanzarEnCm(byte *medidaDelDoblez){
+      encoder_count=0;
+      
+      //Toma medidas
+      long Medida = 0;
+      Medida = *medidaDelDoblez; 
+      
+      Serial.print(deCmAPulsos(Medida)); Serial.print(F(" Cm "));
+      Medida = deCmAPulsos(Medida);
+      pidcontroller.setpoint(Medida);
+      Serial.print(Medida); Serial.println(F(" Pulsos"));
+      // 1.-------------------------------------------
+      do{
+        analogWrite(frecuenciaPWM, 255);
+        digitalWrite(pinAlimentar, LOW);
+        //Alimente mientras este lleno
+      }while(encoder_count < Medida);
+      
+      digitalWrite(pinAlimentar, HIGH);
+      digitalWrite(pinRetraer, HIGH);
+
+      delay(500);
+      Serial.print(encoder_count); Serial.println(F(" Salio"));
+       
+      //Devolverm usando control de precisión PID
+      while(encoder_count < Medida - errorOffSet || encoder_count > Medida + errorOffSet){
+        operarPID();
+      }
+      
+      digitalWrite(pinAlimentar, 1);
+      digitalWrite(pinRetraer, 1);
 }
 
 void operarPID(){
