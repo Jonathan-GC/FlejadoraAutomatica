@@ -698,10 +698,10 @@ void loop() {
                 //while(1);
 
                 //Avanzar al Punto de dobles nuevamente y esperar el arranque
-                byte flag = distanciaPuntoDeDoblez+8; 
+                byte flag = distanciaPuntoDeDoblez+5; 
                 avanzarEnCm(&flag);
                 delay(1000);
-                while(1);
+                
             
             }
 
