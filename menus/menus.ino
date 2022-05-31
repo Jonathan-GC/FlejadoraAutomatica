@@ -41,7 +41,7 @@ CONTROLADOR DE ALIMENTACION
 */ 
 #include <PIDController.h>
 
-#define __Kp 8//10//8.8 // Proportional constant   260
+#define __Kp 7//10//8.8 // Proportional constant   260
 #define __Ki 0.1 //0.25//0.25 // Integral Constant      2.7
 #define __Kd 0//1.45 // Derivative Constant    2000
 #define errorOffSet 1  //Para sacarlo del punto de calculo
@@ -94,6 +94,8 @@ Variables de lista de flejes
 */
 # define valueVerticesXFleje  5
 # define distanciaPuntoDeDoblez 25
+# define diametroPivote1 15.65
+# define diametroPivote2 19
 
 String MenuFlejes[] = {"", "Fleje 10x15", "Fleje10x10", "Fleje 18x15", "Fleje 8x20", "Fleje 30x30", "Fleje 8x8"};
 
@@ -635,7 +637,10 @@ void loop() {
 
                      Serial.print("Giro: ");Serial.println(i+1);
                     //Avanzar segun centimetros
-                    avanzarEnCm(&fleje[i][0]);
+                    if (fleje[i][1] == 45)
+                      avanzarEnCm(&fleje[i][0], true);
+                    else
+                      avanzarEnCm(&fleje[i][0], false);
                     
                     // 2.-------------------------------------------
                     //Eleccion de ángulo
@@ -645,7 +650,7 @@ void loop() {
                         digitalWrite(pinDoblar_45, HIGH);
                     }
                     
-                    else{
+                    else if (fleje[i][1] == 90){
                         digitalWrite(pinDoblar_90, LOW);
                         delay(500);
                         digitalWrite(pinDoblar_90, HIGH);
@@ -679,10 +684,10 @@ void loop() {
                 long bandera = encoder_count;
                 //pulsos para retraer
                 long Medida = 0;
-                Medida = deCmAPulsos(fleje[5][0]+3);
+                Medida = deCmAPulsos(fleje[5][0]+2 );
                 
                 do{ 
-                  analogWrite(frecuenciaPWM, 255);
+                  analogWrite(frecuenciaPWM, 200);
                   digitalWrite(pinRetraer, LOW);
                   //Alimente mientras este lleno
                 }while(encoder_count > Medida);
@@ -693,13 +698,14 @@ void loop() {
                 digitalWrite(pinAlimentar, 1);
                 digitalWrite(pinRetraer, 1);
                 
-                delay(5000);
+       
+                delay(3000);
                 Serial.print(encoder_count); Serial.print("\t"); Serial.print(Medida); Serial.print("\t"); Serial.println(bandera);
                 //while(1);
 
                 //Avanzar al Punto de dobles nuevamente y esperar el arranque
-                byte flag = distanciaPuntoDeDoblez+5; 
-                avanzarEnCm(&flag);
+                byte flag = distanciaPuntoDeDoblez; 
+                avanzarEnCm(&flag, true);
                 delay(1000);
                 
             
@@ -714,14 +720,27 @@ void loop() {
 
 }
 
-void avanzarEnCm(byte *medidaDelDoblez){
+//Esta funcion permite que el alimentador avance o inserte material
+//Los parametros medidaDeDoblez, apunta a la medida en bytes
+//El parametro arco permite sumar en el doblez ya que este consume logitud de la varilla
+//arco:0 Para dobles de 90 grados
+//arco:1 Para dobles de 45 grados
+
+void avanzarEnCm(byte *medidaDelDoblez, bool arco){
       encoder_count=0;
       
       //Toma medidas
-      long Medida = 0;
-      Medida = *medidaDelDoblez; 
+      float Medida = 0;
+       
+      if(arco){
+        Medida = *medidaDelDoblez + 1.84;
+      }
+      else{
+        Medida = *medidaDelDoblez + 1.22 ; 
+      }
       
       Serial.print(deCmAPulsos(Medida)); Serial.print(F(" Cm "));
+      
       Medida = deCmAPulsos(Medida);
       pidcontroller.setpoint(Medida);
       Serial.print(Medida); Serial.println(F(" Pulsos"));
