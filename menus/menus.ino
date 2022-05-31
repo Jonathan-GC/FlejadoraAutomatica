@@ -42,10 +42,10 @@ CONTROLADOR DE ALIMENTACION
 #include <PIDController.h>
 
 #define __Kp 7//10//8.8 // Proportional constant   260
-#define __Ki 0.1 //0.25//0.25 // Integral Constant      2.7
-#define __Kd 0//1.45 // Derivative Constant    2000
+#define __Ki 0.2//0.1 //0.25//0.25 // Integral Constant      2.7
+#define __Kd 0.5//1.45 // Derivative Constant    2000
 #define errorOffSet 1  //Para sacarlo del punto de calculo
-#define umbralDesAccionamiento 3
+#define umbralDesAccionamiento 1
 
 volatile long int encoder_count = 0; // stores the current encoder count
 long integerValue = 0;
@@ -635,7 +635,7 @@ void loop() {
             if(digitalRead(pinPLCSignal) == 0){
                 for (byte i = 0; i < 5; i++){
 
-                     Serial.print("Giro: ");Serial.println(i+1);
+                    Serial.print("Giro: ");Serial.println(i+1);
                     //Avanzar segun centimetros
                     if (fleje[i][1] == 45)
                       avanzarEnCm(&fleje[i][0], true);
@@ -687,7 +687,7 @@ void loop() {
                 Medida = deCmAPulsos(fleje[5][0]+2 );
                 
                 do{ 
-                  analogWrite(frecuenciaPWM, 200);
+                  analogWrite(frecuenciaPWM, 180);
                   digitalWrite(pinRetraer, LOW);
                   //Alimente mientras este lleno
                 }while(encoder_count > Medida);
@@ -699,14 +699,14 @@ void loop() {
                 digitalWrite(pinRetraer, 1);
                 
        
-                delay(3000);
+                delay(1200);
                 Serial.print(encoder_count); Serial.print("\t"); Serial.print(Medida); Serial.print("\t"); Serial.println(bandera);
                 //while(1);
 
                 //Avanzar al Punto de dobles nuevamente y esperar el arranque
                 byte flag = distanciaPuntoDeDoblez; 
                 avanzarEnCm(&flag, true);
-                delay(1000);
+                delay(500);
                 
             
             }
