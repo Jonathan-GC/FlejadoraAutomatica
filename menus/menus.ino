@@ -106,7 +106,7 @@ byte fleje[6][2]={
         {10,90},
         {10,90},
         {10,90},
-        {10,45},
+        {11,45},
         {5 ,90}      
     };
 
@@ -152,15 +152,11 @@ unsigned char stateChannelA;
 unsigned char stateChannelB;
 unsigned char prevStateChannelA = 0;
 
-int maxSteps = 9999;
-int prevValue;
-int value;
 
 const int timeThreshold = 200; 
 unsigned long currentTime;
 unsigned long loopTime;
 
-bool IsCW = true;
 
 //*****************************************************************
 struct PantallaPrincipal
@@ -515,7 +511,7 @@ void setup(){
 
 void loop() {
     
-    if(startProcess){   
+    if(!startProcess){   
         Teclado Button = readButtons();
 
         if(Button == RIGHT){
@@ -617,7 +613,7 @@ void loop() {
         
         delay(100); 
     }
-    else if (!startProcess) {
+    else if (startProcess) {
     //if (startProcess) {
         //limpiar memoria y prepararla para el encoder  
         //for(byte i = 0; i < 7; i++) 
@@ -655,6 +651,8 @@ void loop() {
                         delay(500);
                         digitalWrite(pinDoblar_90, HIGH);
                     }
+                    //Este delay permite que el sistema se recupere y no arranque inmediatamente
+                    //El motro de alimentación
                     delay(300);
 
 
@@ -681,32 +679,28 @@ void loop() {
                 Serial.println(F("Salio del for a corte"));
                 
                 encoder_count += deCmAPulsos(distanciaPuntoDeDoblez);
-                long bandera = encoder_count;
+                //long bandera = encoder_count;
                 //pulsos para retraer
-                long Medida = 0;
-                Medida = deCmAPulsos(fleje[5][0]+2 );
-                
-                do{ 
-                  analogWrite(frecuenciaPWM, 180);
-                  digitalWrite(pinRetraer, LOW);
-                  //Alimente mientras este lleno
-                }while(encoder_count > Medida);
+                int Medida = fleje[5][0];
+                Medida = deCmAPulsos(Medida);
+                pidcontroller.setpoint(Medida);
 
-                digitalWrite(pinAlimentar, 0);
-                digitalWrite(pinRetraer, 1);
-                delay(50);
+                while(encoder_count < Medida - errorOffSet || encoder_count > Medida + errorOffSet){
+                  operarPID();
+                }
+      
                 digitalWrite(pinAlimentar, 1);
                 digitalWrite(pinRetraer, 1);
                 
        
-                delay(1200);
-                Serial.print(encoder_count); Serial.print("\t"); Serial.print(Medida); Serial.print("\t"); Serial.println(bandera);
+                delay(1500);
+                //Serial.print(encoder_count); Serial.print("\t"); Serial.print(Medida); Serial.print("\t"); Serial.println(bandera);
                 //while(1);
 
                 //Avanzar al Punto de dobles nuevamente y esperar el arranque
                 byte flag = distanciaPuntoDeDoblez; 
                 avanzarEnCm(&flag, true);
-                delay(500);
+                delay(800);
                 
             
             }
