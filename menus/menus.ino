@@ -41,11 +41,11 @@ CONTROLADOR DE ALIMENTACION
 */ 
 #include <PIDController.h>
 
-#define __Kp 7//10//8.8 // Proportional constant   260
-#define __Ki 0.2//0.1 //0.25//0.25 // Integral Constant      2.7
-#define __Kd 0.5//1.45 // Derivative Constant    2000
-#define errorOffSet 1  //Para sacarlo del punto de calculo
-#define umbralDesAccionamiento 1
+#define __Kp 15//10//8.8 // Proportional constant   260
+#define __Ki 0//0.1 //0.25//0.25 // Integral Constant      2.7
+#define __Kd 1//1.45 // Derivative Constant    2000
+#define errorOffSet 15  //Para sacarlo del punto de calculo
+#define umbralDesAccionamiento 20
 
 volatile long int encoder_count = 0; // stores the current encoder count
 long integerValue = 0;
@@ -93,7 +93,7 @@ Variables de lista de flejes
               1 5  4
 */
 # define valueVerticesXFleje  5
-# define distanciaPuntoDeDoblez 25
+# define distanciaPuntoDeDoblez 24
 # define diametroPivote1 15.65
 # define diametroPivote2 19
 
@@ -102,12 +102,12 @@ String MenuFlejes[] = {"", "Fleje 10x15", "Fleje10x10", "Fleje 18x15", "Fleje 8x
 enum Teclado {ENTER, LEFT, UP, DOWN, RIGHT, UNKNOWN};
 
 byte fleje[6][2]={
-        {5, 45},
-        {10,90},
-        {10,90},
-        {10,90},
-        {11,45},
-        {5 ,90}      
+        {3, 90},
+        {15,90},
+        {5,90},
+        {15,90},
+        {5,90},
+        {3 ,90}      
     };
 
 
@@ -511,7 +511,7 @@ void setup(){
 
 void loop() {
     
-    if(!startProcess){   
+    if(startProcess){   
         Teclado Button = readButtons();
 
         if(Button == RIGHT){
@@ -613,7 +613,7 @@ void loop() {
         
         delay(100); 
     }
-    else if (startProcess) {
+    else if (!startProcess) {
     //if (startProcess) {
         //limpiar memoria y prepararla para el encoder  
         //for(byte i = 0; i < 7; i++) 
@@ -666,7 +666,10 @@ void loop() {
                     
                     
                 }
-                
+                analogWrite(frecuenciaPWM, 150);
+                digitalWrite(pinAlimentar, LOW);
+                delay(280);
+                digitalWrite(pinAlimentar, 1);
                 //Reset del contador para contar tambien el desfase 
                 //en la salida o permitir la salida del gancho
                 //Sin que se trabe la maquina
@@ -684,7 +687,7 @@ void loop() {
                 int Medida = fleje[5][0];
                 Medida = deCmAPulsos(Medida);
                 pidcontroller.setpoint(Medida);
-
+                
                 while(encoder_count < Medida - errorOffSet || encoder_count > Medida + errorOffSet){
                   operarPID();
                 }
@@ -725,6 +728,7 @@ void avanzarEnCm(byte *medidaDelDoblez, bool arco){
       
       //Toma medidas
       float Medida = 0;
+     
        
       if(arco){
         Medida = *medidaDelDoblez + 1.84;
@@ -738,12 +742,14 @@ void avanzarEnCm(byte *medidaDelDoblez, bool arco){
       Medida = deCmAPulsos(Medida);
       pidcontroller.setpoint(Medida);
       Serial.print(Medida); Serial.println(F(" Pulsos"));
+      
       // 1.-------------------------------------------
-      do{
-        analogWrite(frecuenciaPWM, 255);
-        digitalWrite(pinAlimentar, LOW);
-        //Alimente mientras este lleno
-      }while(encoder_count < Medida);
+      //Avanzar con fuerza
+//      do{
+//        analogWrite(frecuenciaPWM, 255);
+//        digitalWrite(pinAlimentar, LOW);
+//        //Alimente mientras este lleno
+//      }while(encoder_count < Medida-medidaOffSET);
       
       digitalWrite(pinAlimentar, HIGH);
       digitalWrite(pinRetraer, HIGH);
@@ -875,7 +881,8 @@ void Encoder (){
 }
 int deCmAPulsos (int Cm){
   int Resultado;
-  Cm < 10?Resultado = Cm*ConstanteDeConversion1:Resultado = Cm*ConstanteDeConversion2;
+  //Cm < 10?Resultado = Cm*ConstanteDeConversion1:Resultado = Cm*ConstanteDeConversion2;
+  Resultado = Cm*ConstanteDeConversion1;
   return Resultado;
 }
 
