@@ -41,11 +41,13 @@ CONTROLADOR DE ALIMENTACION
 */ 
 #include <PIDController.h>
 
-#define __Kp 15//10//8.8 // Proportional constant   260
-#define __Ki 0//0.1 //0.25//0.25 // Integral Constant      2.7
+#define __Kp 19//10//8.8 // Proportional constant   260
+#define __Ki 0.8//0.1 //0.25//0.25 // Integral Constant      2.7
 #define __Kd 1//1.45 // Derivative Constant    2000
-#define errorOffSet 15  //Para sacarlo del punto de calculo
-#define umbralDesAccionamiento 20
+#define errorOffSet 5
+
+//15  //Para sacarlo del punto de calculo
+#define umbralDesAccionamiento 15//20
 
 volatile long int encoder_count = 0; // stores the current encoder count
 long integerValue = 0;
@@ -93,7 +95,7 @@ Variables de lista de flejes
               1 5  4
 */
 # define valueVerticesXFleje  5
-# define distanciaPuntoDeDoblez 24
+# define distanciaPuntoDeDoblez 25
 # define diametroPivote1 15.65
 # define diametroPivote2 19
 
@@ -653,7 +655,14 @@ void loop() {
                     }
                     //Este delay permite que el sistema se recupere y no arranque inmediatamente
                     //El motro de alimentación
-                    delay(300);
+                    if(i==4){
+                      delay(300);
+                    }
+                    else{
+                      delay(25);
+
+                      
+                    }
 
 
                     
@@ -666,9 +675,10 @@ void loop() {
                     
                     
                 }
+                //Alimentar un poco para devolver
                 analogWrite(frecuenciaPWM, 150);
                 digitalWrite(pinAlimentar, LOW);
-                delay(280);
+                delay(250);
                 digitalWrite(pinAlimentar, 1);
                 //Reset del contador para contar tambien el desfase 
                 //en la salida o permitir la salida del gancho
@@ -681,7 +691,8 @@ void loop() {
                
                 Serial.println(F("Salio del for a corte"));
                 
-                encoder_count += deCmAPulsos(distanciaPuntoDeDoblez);
+                //el menos2 es para ajustar el corte del fleje que devuelve mucho y lo abre
+                encoder_count += deCmAPulsos(distanciaPuntoDeDoblez-2);
                 //long bandera = encoder_count;
                 //pulsos para retraer
                 int Medida = fleje[5][0];
@@ -696,14 +707,14 @@ void loop() {
                 digitalWrite(pinRetraer, 1);
                 
        
-                delay(1500);
+                delay(1000);
                 //Serial.print(encoder_count); Serial.print("\t"); Serial.print(Medida); Serial.print("\t"); Serial.println(bandera);
                 //while(1);
 
                 //Avanzar al Punto de dobles nuevamente y esperar el arranque
                 byte flag = distanciaPuntoDeDoblez; 
                 avanzarEnCm(&flag, true);
-                delay(800);
+                delay(50);
                 
             
             }
@@ -731,10 +742,12 @@ void avanzarEnCm(byte *medidaDelDoblez, bool arco){
      
        
       if(arco){
-        Medida = *medidaDelDoblez + 1.84;
+        Medida = *medidaDelDoblez + 1.8;
+        //Medida = *medidaDelDoblez;
       }
       else{
-        Medida = *medidaDelDoblez + 1.22 ; 
+        //Medida = *medidaDelDoblez + 1.22 ; 
+        Medida = *medidaDelDoblez;
       }
       
       Serial.print(deCmAPulsos(Medida)); Serial.print(F(" Cm "));
@@ -754,7 +767,7 @@ void avanzarEnCm(byte *medidaDelDoblez, bool arco){
       digitalWrite(pinAlimentar, HIGH);
       digitalWrite(pinRetraer, HIGH);
 
-      delay(500);
+      delay(300);
       Serial.print(encoder_count); Serial.println(F(" Salio"));
        
       //Devolverm usando control de precisión PID
